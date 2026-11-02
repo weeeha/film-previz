@@ -1,5 +1,13 @@
 # film-previz
 
+**Problem.** Planning shots before a shoot needs a place to put a camera and try lenses. A streamed generated world drifts between visits, so it cannot hold a shot list.
+
+**Idea.** Generate a set once in World Labs Marble and walk it in the browser, where a virtual camera follows real focal length and sensor math. Each saved shot exports as a frame grab plus its camera data in a shot list.
+
+**Built.** Spec only so far: a design spec and an implementation plan (phases 0 to 5, plus an optional Quest 3 phase), and no app code. 6 commits on 2 days, Oct 27 to Oct 30, 2026.
+
+**Decision.** The splat is for looking and a separate collider mesh is for picking, instead of raycasting against the splat. Spark's documentation does not describe raycasting against splats (unverified), so floor and wall hits go through the invisible mesh.
+
 Status: exploration. Live URL: none. Started 2026-10-27.
 
 ## TL;DR
