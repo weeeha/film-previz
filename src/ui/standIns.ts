@@ -5,6 +5,7 @@ import type { ShotState } from "../camera/shotState";
 import { wrapHeading } from "../camera/pose";
 import { standInReadout, MIN_HEIGHT_M, MAX_HEIGHT_M, type StandInSet, type FrameReadout } from "../model/standIns";
 import type { StandIn } from "../model/types";
+import type { Session } from "../model/session";
 import { el, labelled, fmt, isFocused } from "./dom";
 
 const AHEAD_M = 3;
@@ -12,6 +13,7 @@ const DEG = Math.PI / 180;
 
 export const NO_SCALE_LINE = "Confirm the scale to add stand-ins. Their heights are in metres.";
 export const ASSUMPTION_LINE = "Head height of 0.23 m is an assumption. Use these readouts to check face size against the shot size.";
+export const NO_AXIS_LINE = "Add two stand-ins to set the action axis.";
 export const EMPTY_LINE = "No stand-ins on this scene. Add one to check how large a person is in the frame.";
 
 type Refs = {
@@ -35,7 +37,7 @@ function readoutText(r: FrameReadout): { pct: string; head: string; note: string
 
 /** The Stand-ins section of the Stage inspector: the list, the editor of one open row, and the figures in the viewport. */
 export function createStandInsPanel(
-  viewer: Viewer, shot: ShotState, set: StandInSet, scaleConfirmed: () => boolean,
+  viewer: Viewer, shot: ShotState, set: StandInSet, scaleConfirmed: () => boolean, session?: Session,
 ): { root: HTMLDetailsElement; selectedId(): string | null; refresh(): void; dispose(): void } {
   const figures = new StandInFigures(viewer.scene, HELPER_LAYER);
   let selected: string | null = null;
@@ -49,9 +51,25 @@ export function createStandInsPanel(
   const addBtn = el("button", { className: "btn", type: "button", id: "standin-add" }, "Add stand-in");
   addBtn.style.justifySelf = "start";
   const noScale = el("p", { className: "hint", id: "standin-noscale" }, NO_SCALE_LINE);
+  // ----- action axis: a line between two stand-ins, stored on the scene -----
+  const axisSelA = el("select", { id: "axis-a" });
+  const axisSelB = el("select", { id: "axis-b" });
+  axisSelA.setAttribute("aria-label", "Action axis, first stand-in");
+  axisSelB.setAttribute("aria-label", "Action axis, second stand-in");
+  const axisSet = el("button", { className: "btn", type: "button", id: "axis-set" }, "Set action axis");
+  const axisClear = el("button", { className: "btn", type: "button", id: "axis-clear" }, "Clear");
+  const axisLine = el("span", { className: "meta", id: "axis-line" });
+  const axisNone = el("p", { className: "hint", id: "axis-none" }, NO_AXIS_LINE);
+  const axisState = el("div", { className: "row", id: "axis-state" }, axisLine, axisClear);
+  axisState.style.cssText = "display:flex;gap:var(--s3);align-items:center;justify-content:space-between";
+  const axisPick = el("div", { className: "fields two", id: "axis-pick" }, axisSelA, axisSelB);
+  const axis = el("div", { className: "rows", id: "axis" }, axisNone, axisPick, axisSet, axisState);
+  axisSet.style.justifySelf = "start";
+  let axisKey = "";
+
   const root = el("details", { className: "insp", id: "standins", open: true },
     el("summary", {}, el("h2", { id: "h-stand" }, "Stand-ins"), count),
-    el("div", { className: "insp-body" }, list, empty, addBtn, noScale),
+    el("div", { className: "insp-body" }, list, empty, addBtn, noScale, axis),
   );
   root.setAttribute("aria-labelledby", "h-stand");
 
@@ -113,6 +131,46 @@ export function createStandInsPanel(
     return r;
   }
 
+  function paintAxis(items: StandIn[]): void {
+    const two = items.length >= 2 && session !== undefined;
+    axis.hidden = session === undefined;
+    axisNone.hidden = two;
+    axisPick.hidden = !two;
+    axisSet.hidden = !two;
+    const key = items.map((s) => `${s.id}:${s.label}`).join("|");
+    if (two && key !== axisKey) {
+      axisKey = key;
+      const a = axisSelA.value, b = axisSelB.value;
+      for (const [sel, keep, fallback] of [[axisSelA, a, 0], [axisSelB, b, 1]] as const) {
+        sel.replaceChildren(...items.map((s) => el("option", { value: s.id }, s.label)));
+        sel.value = items.some((s) => s.id === keep) ? keep : items[Math.min(fallback, items.length - 1)]!.id;
+      }
+    }
+    axisSet.disabled = !two || axisSelA.value === axisSelB.value;
+    const a = session?.scene()?.actionAxis ?? null;
+    axisState.hidden = a === null;
+    axisLine.textContent = a ? `Action axis: ${a.label}` : "";
+  }
+
+  async function saveAxis(actionAxis: NonNullable<ReturnType<Session["scene"]>>["actionAxis"]): Promise<void> {
+    const scene = session?.scene();
+    if (!session || !scene) return;
+    // Read the record again: the session copy can be older than a scale confirmed since it was loaded, and saving it would undo that.
+    const db = await session.store();
+    const fresh = (await db.getScene(scene.id)) ?? scene;
+    await db.saveScene({ ...fresh, actionAxis });
+    await session.refresh();
+  }
+  axisSet.addEventListener("click", () => {
+    const items = set.list();
+    const a = items.find((s) => s.id === axisSelA.value), b = items.find((s) => s.id === axisSelB.value);
+    if (!a || !b || a.id === b.id) return;
+    void saveAxis({ label: `${a.label} to ${b.label}`, aM: [a.positionM[0], a.positionM[2]], bM: [b.positionM[0], b.positionM[2]] }).catch(console.error);
+  });
+  axisClear.addEventListener("click", () => { void saveAxis(null).catch(console.error); });
+  axisSelA.addEventListener("change", () => paintAxis(set.list()));
+  axisSelB.addEventListener("change", () => paintAxis(set.list()));
+
   function paint(): void {
     const items = set.list();
     if (selected && !items.some((s) => s.id === selected)) selected = null;
@@ -151,6 +209,7 @@ export function createStandInsPanel(
       }
     }
     figures.sync(items, selected, shot.frontHeadingDeg());
+    paintAxis(items);
   }
 
   function add(): void {
@@ -195,6 +254,7 @@ export function createStandInsPanel(
 
   const offSet = set.subscribe(paint);
   const offShot = shot.subscribe(paint);
+  const offSession = session?.subscribe(paint);
   paint();
 
   return {
@@ -202,7 +262,7 @@ export function createStandInsPanel(
     selectedId: () => selected,
     refresh: paint,
     dispose() {
-      offSet(); offShot();
+      offSet(); offShot(); offSession?.();
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onUp);

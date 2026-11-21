@@ -1,7 +1,8 @@
 import type { Session } from "../model/session";
 import { SIZE_LABELS, type Shot, type SizeLabel } from "../model/types";
 import { heightText, lensLabel, sensorLabel } from "../model/shotRecord";
-import { buildExportZip, exportFolderName, exportZipName, type ExportFrame } from "../export/zip";
+import { buildExportZip, exportFolderName, exportZipName, type ExportFrame, type FloorPlanState } from "../export/zip";
+import { buildFloorPlan, floorPlanPng } from "../export/floorPlan";
 import { el } from "./dom";
 
 export type Shots = {
@@ -47,7 +48,7 @@ function iconButton(kind: keyof typeof ICONS, label: string, title: string, onCl
 type TextField = "name" | "job" | "action" | "notes";
 
 /** The Shots route, built from draft/shots.html. */
-export function createShots(session: Session, onOpen: (shot: Shot) => void): Shots {
+export function createShots(session: Session, onOpen: (shot: Shot) => void, colliderTriangles: () => Float32Array | null = () => null, hasCollider: () => boolean = () => false): Shots {
   type Undo = { shot: Shot; frame: Blob | null; index: number; sceneId: string; rev: number; later: boolean };
   let undo: Undo | null = null;
   let active = false;
@@ -204,13 +205,14 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
 
   /** Read every frame, zip, and hand the zip to the browser. One zip, no File System Access API, so Safari works. */
   async function exportZip(): Promise<void> {
-    const scene = session.scene();
+    const open = session.scene();
     const list = session.shots();
-    if (!scene || !list.length || exportState.kind === "exporting") return;
+    if (!open || !list.length || exportState.kind === "exporting") return;
     exportState = { kind: "exporting", done: 0, total: list.length };
     paintExport(list);
     try {
       const db = await store();
+      const scene = (await db.getScene(open.id)) ?? open; // the stored record: the scale may have been confirmed since the session read it
       const frames: ExportFrame[] = [];
       for (const shot of list) {
         const blob = await db.getFrame(shot.sceneId, shot.id);
@@ -221,7 +223,10 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
         await new Promise((r) => setTimeout(r, 0)); // let the progress bar draw
       }
       const file = exportZipName(scene);
-      download(buildExportZip(scene, frames), file);
+      const floorPlan: FloorPlanState = scene.scale.confirmedAt
+        ? { kind: "included", png: floorPlanPng(buildFloorPlan(scene, list, colliderTriangles())) }
+        : { kind: "left-out", reason: "scale-not-confirmed" };
+      download(buildExportZip(scene, frames, floorPlan), file);
       exportState = { kind: "exported", count: list.length, file };
     } catch (e) {
       console.error(e);
@@ -292,7 +297,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
         li("shot-list.md", "Table with the film-craft shot list columns."),
         li("location-sheet.md", "Filled from the scene record."),
         li("frames/shot-001.jpg", list.length ? `One frame per shot, up to shot-${last}.jpg. Saved at the shot's aspect, without overlays.` : "One frame per shot. Saved at the shot's aspect, without overlays."),
-        li("floor-plan.png", "Not included yet. Top-down view with numbered cameras arrives with stand-ins."),
+        li("floor-plan.png", !scene?.scale.confirmedAt ? "Left out until the scale is confirmed." : hasCollider() ? "Top-down view with numbered cameras." : "Top-down view with numbered cameras. Walls are not drawn without a collider mesh."),
         li("scene-ref.json", "Scene name, file name, SHA-256 and scale source. No scene data."),
       ),
     ));
@@ -349,6 +354,15 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
 
   return {
     root,
-    setActive(on) { active = on; if (on) paint(); },
+    setActive(on) {
+      active = on;
+      if (!on) return;
+      paint();
+      // The scale or the action axis may have changed on another route since the session read the scene. Refresh only then, so the table is not redrawn for nothing.
+      const open = session.scene();
+      if (open) void session.store().then((db) => db.getScene(open.id)).then((fresh) => {
+        if (fresh && JSON.stringify([fresh.scale, fresh.actionAxis ?? null]) !== JSON.stringify([open.scale, open.actionAxis ?? null])) return session.refresh();
+      }).catch(console.error);
+    },
   };
 }

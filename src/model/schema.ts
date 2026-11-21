@@ -173,6 +173,13 @@ export function validateScene(v: unknown): Validation {
     if (!e.rec(p, m)) return;
     e.str(`${p}.id`, m.id); e.str(`${p}.label`, m.label); e.vec3(`${p}.positionM`, m.positionM);
   });
+  if (v.actionAxis !== undefined && v.actionAxis !== null && e.rec("actionAxis", v.actionAxis)) {
+    const a = v.actionAxis;
+    e.str("actionAxis.label", a.label);
+    for (const k of ["aM", "bM"] as const) {
+      if (!Array.isArray(a[k]) || a[k].length !== 2 || !a[k].every(isNum)) e.add(`actionAxis.${k}`, "must be two finite numbers (x and z)");
+    }
+  }
   e.iso("createdAt", v.createdAt);
   return e.done();
 }

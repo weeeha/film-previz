@@ -98,15 +98,24 @@ describe("shot list", () => {
 describe("location sheet", () => {
   it("location_sheet_fields", () => {
     const sc = makeScene(undefined, { name: "Test room", sourceKind: "text", sourceNote: "a small room", colliderFile: { name: "set-01-collider.glb", bytes: 99, sha256: "c".repeat(64) } });
-    const md = locationSheetMarkdown(sc, shots);
+    const md = locationSheetMarkdown(sc, shots, "included");
     for (const part of ["Test room", sc.id, "generated from text", "a small room", sc.file.name, "set-01-collider.glb"]) expect(md).toContain(part);
+  });
+
+  it("location_sheet_names_the_floor_plan_and_axis", () => {
+    const line = (md: string) => md.split("\n").find((l) => l.includes("Floor plan with entrances"))!;
+    expect(line(locationSheetMarkdown(scene, shots, "included"))).toContain("floor-plan.png, cameras numbered as in shot-list.md, action axis: not set");
+    const axis = makeScene(undefined, { actionAxis: { label: "Anna to Ben", aM: [0, 0], bM: [1, 2] } });
+    expect(line(locationSheetMarkdown(axis, shots, "included"))).toContain("action axis: Anna to Ben");
+    expect(line(locationSheetMarkdown(scene, shots, "left-out"))).toContain("not included: scale not confirmed");
+    expect(line(locationSheetMarkdown(scene, shots, "left-out"))).not.toContain("floor-plan.png");
   });
 });
 
 describe("zip", () => {
   const jpeg = (n: number) => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, n, 0, 1, 2, 3, 4]);
   it("holds the folder layout, one frame per shot and no scene bytes", () => {
-    const zip = buildExportZip(scene, shots.map((shot, i) => ({ shot, bytes: jpeg(i) })));
+    const zip = buildExportZip(scene, shots.map((shot, i) => ({ shot, bytes: jpeg(i) })), { kind: "left-out", reason: "scale-not-confirmed" });
     const files = unzipSync(zip);
     const names = Object.keys(files).sort();
     expect(names).toEqual([
@@ -118,5 +127,21 @@ describe("zip", () => {
     expect(records).toHaveLength(3);
     for (const r of records) expect(validateShot(r)).toEqual({ ok: true });
     expect(JSON.parse(strFromU8(files["set-01-previz/scene-ref.json"]!))).toEqual({ name: "Set 01", fileName: scene.file.name, sha256: scene.file.sha256, scaleSource: "none" });
+  });
+
+  const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  const png = new Uint8Array([...PNG_SIGNATURE, 0, 0, 0, 13, 73, 72, 68, 82]);
+  it("zip_holds_the_floor_plan", () => {
+    const zip = buildExportZip(scene, shots.map((shot, i) => ({ shot, bytes: jpeg(i) })), { kind: "included", png });
+    const files = unzipSync(zip);
+    const entry = files["set-01-previz/floor-plan.png"];
+    expect(entry).toBeDefined();
+    expect(Array.from(entry!.subarray(0, 8))).toEqual(PNG_SIGNATURE);
+    expect(strFromU8(files["set-01-previz/location-sheet.md"]!)).toContain("floor-plan.png, cameras numbered as in shot-list.md");
+  });
+  it("zip_without_scale_has_no_floor_plan", () => {
+    const files = unzipSync(buildExportZip(scene, shots.map((shot, i) => ({ shot, bytes: jpeg(i) })), { kind: "left-out", reason: "scale-not-confirmed" }));
+    expect(Object.keys(files).some((n) => n.endsWith("floor-plan.png"))).toBe(false);
+    expect(strFromU8(files["set-01-previz/location-sheet.md"]!)).toContain("not included: scale not confirmed");
   });
 });

@@ -223,6 +223,27 @@ export class Viewer {
 
   get hasCollider(): boolean { return this.collider !== null; }
 
+  /**
+   * The collider's triangles in the metric world frame (the frame of shot poses and stand-in positions, floor at y = 0
+   * once the scale is applied), 9 numbers each, or null when no collider is loaded. The mesh's own world matrix
+   * carries the 180 degree turn about x, the scale and the ground shift, the same transform pickCollider reads.
+   */
+  colliderTriangles(): Float32Array | null {
+    const m = this.collider;
+    if (!m) return null;
+    this.scene.updateMatrixWorld(true);
+    const pos = m.geometry.attributes.position!;
+    const index = m.geometry.index;
+    const n = index ? index.count : pos.count;
+    const out = new Float32Array(n * 3);
+    const v = new THREE.Vector3();
+    for (let i = 0; i < n; i++) {
+      v.fromBufferAttribute(pos, index ? index.getX(i) : i).applyMatrix4(m.matrixWorld);
+      out[i * 3] = v.x; out[i * 3 + 1] = v.y; out[i * 3 + 2] = v.z;
+    }
+    return out;
+  }
+
   /** Take the collider out, for example when another scene is opened. */
   clearCollider(): void {
     if (!this.collider) return;

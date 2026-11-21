@@ -52,7 +52,7 @@ function boot(): void {
     session.setScene(id).then(() => shot.syncFromCamera()).catch((e) => console.warn("could not read the shots", e));
   });
   const stage = createStage(viewer, shot, sceneScale, session);
-  const shots = createShots(session, (rec) => { stage.openShot(rec); location.hash = "#/stage"; });
+  const shots = createShots(session, (rec) => { stage.openShot(rec); location.hash = "#/stage"; }, () => viewer.colliderTriangles(), () => viewer.hasCollider);
 
   if (import.meta.env.DEV) {
     (window as unknown as { __shot: typeof shot; __session: typeof session }).__shot = shot;

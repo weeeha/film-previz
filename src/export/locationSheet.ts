@@ -2,6 +2,7 @@
 // No scene bytes: file names, sizes and the SHA-256 only.
 import type { Scene, Shot } from "../model/types";
 import { cell } from "./shotList";
+import type { FloorPlanState } from "./zip";
 
 const SOURCE_WORDS: Record<Scene["sourceKind"], string> = {
   text: "generated from text",
@@ -17,7 +18,14 @@ const SCALE_WORDS: Record<Scene["scale"]["source"], string> = {
   none: "not set",
 };
 
-export function locationSheetMarkdown(scene: Scene, shots: Shot[]): string {
+function floorPlanLine(scene: Scene, floorPlan: FloorPlanState["kind"]): string {
+  const label = "Floor plan with entrances, exits, action axis, and numbered cameras:";
+  if (floorPlan === "left-out") return `- ${label} not included: scale not confirmed`;
+  const axis = scene.actionAxis ? `action axis: ${cell(scene.actionAxis.label)}` : "action axis: not set";
+  return `- ${label} floor-plan.png, cameras numbered as in shot-list.md, ${axis}`;
+}
+
+export function locationSheetMarkdown(scene: Scene, shots: Shot[], floorPlan: FloorPlanState["kind"]): string {
   const f = scene.file;
   const files = [`${f.name} (${f.format}, ${f.bytes} bytes)`];
   if (scene.colliderFile) files.push(`${scene.colliderFile.name} (collider mesh, ${scene.colliderFile.bytes} bytes)`);
@@ -36,7 +44,7 @@ export function locationSheetMarkdown(scene: Scene, shots: Shot[]): string {
     `- Name/id and scenes hosted: ${cell(scene.name)}, ${scene.id}`,
     `- Real, built, or invented; source/reference paths: ${SOURCE_WORDS[scene.sourceKind]}${scene.sourceNote ? `: ${cell(scene.sourceNote)}` : ""}; local files: ${files.map(cell).join("; ")}`,
     `- What the place contributes to the story:`,
-    `- Floor plan with entrances, exits, action axis, and numbered cameras: not included in this export yet`,
+    floorPlanLine(scene, floorPlan),
     `- Background visible from each camera, including any necessary landmarks:`,
     `- Scene file SHA-256: ${f.sha256}`,
     `- ${scaleLine}`,

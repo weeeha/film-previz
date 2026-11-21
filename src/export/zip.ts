@@ -2,6 +2,7 @@
 import { zipSync } from "fflate";
 import { frameFileFor } from "../model/shotRecord";
 import type { Scene, Shot } from "../model/types";
+import { FLOOR_PLAN_FILE } from "./floorPlan";
 import { locationSheetMarkdown } from "./locationSheet";
 import { shotListMarkdown } from "./shotList";
 
@@ -21,18 +22,22 @@ export function shotsJson(shots: Shot[]): string {
   return JSON.stringify([...shots].sort((a, b) => a.number - b.number), null, 2) + "\n";
 }
 
-export function buildExportZip(scene: Scene, frames: ExportFrame[]): Uint8Array {
+/** The floor plan is left out, with a reason, when the scale is not confirmed. */
+export type FloorPlanState = { kind: "included"; png: Uint8Array } | { kind: "left-out"; reason: "scale-not-confirmed" };
+
+export function buildExportZip(scene: Scene, frames: ExportFrame[], floorPlan: FloorPlanState): Uint8Array {
   const shots = frames.map((f) => f.shot);
   const folder = exportFolderName(scene);
   const enc = new TextEncoder();
   const files: Record<string, Uint8Array> = {
     [`${folder}/shots.json`]: enc.encode(shotsJson(shots)),
     [`${folder}/shot-list.md`]: enc.encode(shotListMarkdown(scene, shots)),
-    [`${folder}/location-sheet.md`]: enc.encode(locationSheetMarkdown(scene, shots)),
+    [`${folder}/location-sheet.md`]: enc.encode(locationSheetMarkdown(scene, shots, floorPlan.kind)),
     [`${folder}/scene-ref.json`]: enc.encode(sceneRefJson(scene)),
   };
-  // JPEG data is already compressed: store it as is (level 0).
+  // JPEG and PNG data are already compressed: store them as is (level 0).
   const stored: Record<string, [Uint8Array, { level: 0 }]> = {};
+  if (floorPlan.kind === "included") stored[`${folder}/${FLOOR_PLAN_FILE}`] = [floorPlan.png, { level: 0 }];
   for (const f of frames) stored[`${folder}/${frameFileFor(f.shot.id)}`] = [f.bytes, { level: 0 }];
   return zipSync({ ...files, ...stored }, { level: 6 });
 }

@@ -102,6 +102,7 @@ type Scene = {
   frontHeadingDeg: number;         // direction treated as heading 0
   lightNote: string;
   markers: Marker[];
+  actionAxis?: { label: string; aM: [number, number]; bM: [number, number] } | null;  // x and z in meters, set from two stand-ins; absent or null when not set
   createdAt: string;
 };
 

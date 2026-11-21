@@ -17,6 +17,8 @@ The owner asked for the remaining tasks to be built with the recommended option 
 - **Clicking a stand-in row, or a figure in the viewport, selects it and opens its editor in place; clicking the open row closes it.** Reason: one open row at a time is the plan's rule, and the selection and the open row are the same state.
 - **The e2e spec uses a 300 splat file with almost transparent splats for the fast tests** and the 500k set only for the measurement against the chair. Reason: a coloured splat in front of a figure tints the pixel the frame grab test checks, and 500k splats at SwiftShader speed make eight tests too slow.
 
+- **The action axis and the export read the scene record from the store, not the session copy.** Reason: the session copy is older than a scale confirmed after it was loaded, and saving it with the axis undid the scale (found by the export e2e). The Shots view also refreshes the session when it opens.
+- **The floor plan is built with the scale that was confirmed, so a plan from a slightly short door mark is scaled by that factor.** Reason: the plan shows what the scene record says; it does not correct it.
 
 ## Phase 5 (camera moves)
 

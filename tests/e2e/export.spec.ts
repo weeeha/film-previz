@@ -104,3 +104,178 @@ test("export_three_shots_downloads_a_zip_with_frames_records_and_no_scene_bytes"
   const planted = { ...files, [`${folder}planted.bin`]: head };
   expect(sceneBytesFound(zip, planted, head)).toEqual([`${folder}planted.bin`]);
 });
+
+
+// ----- floor plan (P4-5) -----
+const collider = path.resolve("scenes/set-01-collider.glb");
+const truthFile = path.resolve("scenes/set-01-truth.json");
+type VV = { localToClient(p: [number, number, number]): { x: number; y: number }; renderer: { domElement: HTMLElement }; clearCollider(): void };
+const toLocal = (m: [number, number, number]): [number, number, number] => [m[0] / 2.5, (m[1] - 1.2) / 2.5, m[2] / 2.5];
+
+/** A few hundred almost transparent splats as a binary PLY: a fast scene for the tests that do not need the 500k set. */
+function tinyPly(): Buffer {
+  const n = 300;
+  const header = "ply\nformat binary_little_endian 1.0\nelement vertex " + n + "\n" +
+    ["x", "y", "z", "f_dc_0", "f_dc_1", "f_dc_2", "opacity", "scale_0", "scale_1", "scale_2", "rot_0", "rot_1", "rot_2", "rot_3"].map((k) => `property float ${k}`).join("\n") + "\nend_header\n";
+  const buf = new Float32Array(n * 14);
+  let seed = 7;
+  const rnd = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 2 ** 32; };
+  for (let i = 0; i < n; i++) buf.set([(rnd() - 0.5) * 2, (rnd() - 0.5) * 0.8, (rnd() - 0.5) * 2, rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1, -8, -3, -3, -3, 1, 0, 0, 0], i * 14);
+  return Buffer.concat([Buffer.from(header, "ascii"), Buffer.from(buf.buffer)]);
+}
+
+async function openTiny(page: Page): Promise<void> {
+  await toScenes(page);
+  await page.waitForFunction(() => "__viewer" in window);
+  await page.setInputFiles("#splat-file", { name: "tiny.ply", mimeType: "application/octet-stream", buffer: tinyPly() });
+  await expect(page.locator("#scene-status")).toHaveAttribute("data-splats", /^\d+$/, { timeout: 60_000 });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __session: { scene(): unknown } }).__session.scene() !== null)).toBe(true);
+}
+
+/** Load the collider, mark the door and confirm a 2.00 m scale, as the Stage tests do. */
+async function confirmScale(page: Page): Promise<void> {
+  const truth = JSON.parse(fs.readFileSync(truthFile, "utf8")) as { door: { centreX: number; heightMetric: number; max: { metric: number[] } } };
+  const faceZ = truth.door.max.metric[2]!;
+  await toScenes(page);
+  await page.setInputFiles("#collider-file", collider);
+  await expect(page.locator("#scene-status")).toHaveAttribute("data-collider-triangles", /^\d+$/, { timeout: 30_000 });
+  await page.waitForTimeout(1000);
+  const clickLocal = async (p: [number, number, number]) => {
+    const c = await page.evaluate((p) => {
+      const v = (window as unknown as { __viewer: VV }).__viewer;
+      v.renderer.domElement.scrollIntoView({ block: "start" });
+      return v.localToClient(p);
+    }, p);
+    await page.mouse.click(c.x, c.y);
+  };
+  await page.click("#scale-mark");
+  await clickLocal(toLocal([truth.door.centreX, 0, faceZ + 0.05]));
+  await clickLocal(toLocal([truth.door.centreX, truth.door.heightMetric - 0.05, faceZ]));
+  await page.fill("#scale-known", "2.00");
+  await page.click("#scale-apply");
+  await expect(page.locator("#scale-chip")).toHaveText("Scale confirmed, door 2.00 m");
+}
+
+async function exportZip(page: Page): Promise<Record<string, Uint8Array>> {
+  await page.click('a[data-route="/shots"]');
+  const done = page.waitForEvent("download", { timeout: 120_000 });
+  await page.locator("#export-btn").click();
+  const download = await done;
+  return unzipSync(new Uint8Array(fs.readFileSync((await download.path())!)));
+}
+
+const SHARED = { room: { x: 3, z: 4 } };
+
+test("export_with_floor_plan", async ({ page }) => {
+  test.skip(!haveScenes() || !fs.existsSync(collider) || !fs.existsSync(truthFile), SKIP);
+  test.setTimeout(900_000);
+  await openLarge(page);
+  await confirmScale(page);
+  await page.click('a[data-route="/stage"]');
+  await page.locator("#through").check();
+  // two stand-ins and an action axis between them, then three shots from different sides
+  await page.evaluate(() => {
+    const set = (window as unknown as { __standIns: { add(p: number[], h: number): void } }).__standIns;
+    set.add([-1.5, 0, -1.0], 90);
+    set.add([1.2, 0, 0.8], 270);
+  });
+  await expect(page.locator("#standin-count")).toHaveText("2 on this scene");
+  await expect(page.locator("#axis-none")).toBeHidden();
+  await page.locator("#axis-set").click();
+  await expect(page.locator("#axis-line")).toHaveText("Action axis: Person A to Person B");
+  const cams: Array<[string, string, string]> = [["0", "3", "0"], ["-2.6", "0", "90"], ["2.2", "-3", "200"]];
+  let n = 0;
+  for (const [x, z, heading] of cams) {
+    await page.fill("#shot-name", `Side ${n + 1}`);
+    await page.fill("#cam-x", x);
+    await page.fill("#cam-z", z);
+    await page.fill("#cam-heading", heading);
+    await saveShot(page, ++n);
+  }
+  await page.click('a[data-route="/shots"]');
+  await expect(page.locator("#export .files li", { hasText: "floor-plan.png" })).toContainText("Top-down view with numbered cameras.");
+  const files = await exportZip(page);
+  const folder = "set-01-500k-previz/";
+  expect(Object.keys(files)).toContain(`${folder}floor-plan.png`);
+  const png = files[`${folder}floor-plan.png`]!;
+  expect(Array.from(png.subarray(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  const sheet = strFromU8(files[`${folder}location-sheet.md`]!);
+  expect(sheet).toContain("floor-plan.png, cameras numbered as in shot-list.md, action axis: Person A to Person B");
+  fs.mkdirSync("reference/app/phase-4", { recursive: true });
+  fs.writeFileSync("reference/app/phase-4/floor-plan.png", png);
+
+  // decode the PNG in the page and compare it with the room the truth file gives
+  const r = await page.evaluate(async (b64) => {
+    const w = window as unknown as { __session: { scene(): any; shots(): any[] }; __viewer: { colliderTriangles(): Float32Array | null } };
+    const url = "/src/export/floorPlan.ts";
+    const mod = (await import(/* @vite-ignore */ url)) as any;
+    const plan = mod.buildFloorPlan(w.__session.scene(), w.__session.shots(), w.__viewer.colliderTriangles());
+    const t = mod.planTransform(plan);
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const bmp = await createImageBitmap(new Blob([bytes], { type: "image/png" }));
+    const c = document.createElement("canvas"); c.width = bmp.width; c.height = bmp.height;
+    const ctx = c.getContext("2d", { willReadFrequently: true })!;
+    ctx.drawImage(bmp, 0, 0);
+    /** Darkest luminance within 4 px of a point. */
+    const darkest = (x: number, z: number) => {
+      const [px, py] = t.toPx(x, z);
+      const d = ctx.getImageData(Math.round(px) - 4, Math.round(py) - 4, 9, 9).data;
+      let m = 255;
+      for (let i = 0; i < d.length; i += 4) m = Math.min(m, (d[i]! + d[i + 1]! + d[i + 2]!) / 3);
+      return m;
+    };
+    // the test marks the door a little short, so the confirmed factor is not exactly 2.5: the room is the truth file's times factor / 2.5
+    const k = w.__session.scene().scale.metricScaleFactor / 2.5;
+    const xs = plan.walls.flatMap((s: number[]) => [s[0]!, s[2]!]), zs = plan.walls.flatMap((s: number[]) => [s[1]!, s[3]!]);
+    return {
+      k, width: bmp.width, height: bmp.height, cameras: plan.cameras.map((q: any) => q.number),
+      walls: plan.walls.length,
+      minX: Math.min(...xs), maxX: Math.max(...xs), minZ: Math.min(...zs), maxZ: Math.max(...zs),
+      cam1: darkest(plan.cameras[0].x, plan.cameras[0].z),
+      backWall: darkest(-1, -4 * k), rightWall: darkest(3 * k, 1), emptyFloor: darkest(0, -2),
+    };
+  }, Buffer.from(png).toString("base64"));
+  console.log("floor plan check", JSON.stringify(r));
+  expect(r.width).toBe(2000);
+  expect(r.cameras).toEqual([1, 2, 3]);
+  expect(r.walls).toBeGreaterThan(8);
+  // the walls cut from the collider land on the room of the truth file (x +-3, z -4 to 4), in the frame of the shot poses
+  expect(r.k).toBeGreaterThan(0.95); expect(r.k).toBeLessThan(1.05);
+  expect(r.minX).toBeCloseTo(-SHARED.room.x * r.k, 1); expect(r.maxX).toBeCloseTo(SHARED.room.x * r.k, 1);
+  expect(r.minZ).toBeCloseTo(-SHARED.room.z * r.k, 1); expect(r.maxZ).toBeCloseTo(SHARED.room.z * r.k, 1);
+  expect(r.cam1).toBeLessThan(120); // camera 1 is drawn where shot 1 stands
+  expect(r.backWall).toBeLessThan(80);
+  expect(r.rightWall).toBeLessThan(80);
+  expect(r.emptyFloor).toBeGreaterThan(250); // and the floor between is white
+});
+
+test("export_without_collider", async ({ page }) => {
+  test.skip(!haveScenes() || !fs.existsSync(collider) || !fs.existsSync(truthFile), SKIP);
+  test.setTimeout(300_000);
+  await openTiny(page);
+  await confirmScale(page);
+  await page.evaluate(() => (window as unknown as { __viewer: VV }).__viewer.clearCollider());
+  await page.click('a[data-route="/stage"]');
+  await page.locator("#through").check();
+  await saveShot(page, 1);
+  await page.click('a[data-route="/shots"]');
+  await expect(page.locator("#export .files li", { hasText: "floor-plan.png" })).toContainText("Walls are not drawn without a collider mesh.");
+  const files = await exportZip(page);
+  const key = Object.keys(files).find((k) => k.endsWith("/floor-plan.png"));
+  expect(key, "floor-plan.png in the zip").toBeDefined();
+  expect(Array.from(files[key!]!.subarray(0, 4))).toEqual([0x89, 0x50, 0x4e, 0x47]);
+});
+
+test("export_without_scale", async ({ page }) => {
+  test.skip(!haveScenes(), SKIP);
+  test.setTimeout(300_000);
+  await openTiny(page);
+  await page.click('a[data-route="/stage"]');
+  await saveShot(page, 1);
+  await page.click('a[data-route="/shots"]');
+  await expect(page.locator("#export .files li", { hasText: "floor-plan.png" })).toContainText("Left out until the scale is confirmed.");
+  const files = await exportZip(page);
+  expect(Object.keys(files).some((k) => k.endsWith("floor-plan.png"))).toBe(false);
+  const sheetKey = Object.keys(files).find((k) => k.endsWith("location-sheet.md"))!;
+  expect(strFromU8(files[sheetKey]!)).toContain("not included: scale not confirmed");
+});

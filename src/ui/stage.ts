@@ -83,7 +83,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   const camera = createCameraPanel(shot, viewer, store);
 
   const standInSet = createStandInSet();
-  const standInsPanel = createStandInsPanel(viewer, shot, standInSet, () => heightPresetsState(store.get()).enabled);
+  const standInsPanel = createStandInsPanel(viewer, shot, standInSet, () => heightPresetsState(store.get()).enabled, session);
   const standins = standInsPanel.root;
   if (import.meta.env.DEV) (window as unknown as { __standIns: typeof standInSet }).__standIns = standInSet;
   const referencePanel = createReferencePanel(viewer);

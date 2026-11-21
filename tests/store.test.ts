@@ -194,6 +194,17 @@ describe("schema", () => {
     expect(r((s) => { s.file.sha256 = "abc"; }).ok).toBe(false);
     expect(r((s) => { s.file.format = "glb" as never; }).ok).toBe(false);
   });
+  it("scene_without_action_axis_validates", () => {
+    expect(validateScene(makeScene())).toEqual({ ok: true });
+    expect(validateScene(makeScene(undefined, { actionAxis: null }))).toEqual({ ok: true });
+    expect(validateScene(makeScene(undefined, { actionAxis: { label: "A to B", aM: [0, 1], bM: [2, 3] } }))).toEqual({ ok: true });
+  });
+  it("bad_action_axis_is_rejected", () => {
+    const bad = validateScene(makeScene(undefined, { actionAxis: { label: "A to B", aM: [0] as unknown as [number, number], bM: [2, 3] } }));
+    expect(bad.ok).toBe(false);
+    if (!bad.ok) expect(bad.errors.join(" ")).toContain("actionAxis.aM");
+    expect(validateScene(makeScene(undefined, { actionAxis: { label: 5 as unknown as string, aM: [0, 1], bM: [2, 3] } })).ok).toBe(false);
+  });
   it("rejects things that are not objects", () => {
     expect(validateShot(null).ok).toBe(false);
     expect(validateScene("x").ok).toBe(false);
