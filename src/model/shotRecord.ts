@@ -1,7 +1,7 @@
 // Building a Shot record from what the Stage holds, and the small derived values the strip and the Shots table show.
 import { lensFov } from "../camera/lens";
 import { ASPECTS, HEIGHT_PRESETS, type Sensor } from "../camera/sensors";
-import type { CameraPose, Shot, SizeLabel } from "./types";
+import type { CameraPose, Shot, SizeLabel, StandIn } from "./types";
 
 export type ShotDetails = { name: string; sizeLabel: SizeLabel | null; job: string; action: string; notes: string };
 
@@ -14,11 +14,13 @@ export type ShotCapture = {
   sceneId: string;
   lens: { focalMm: number; sensor: Sensor; aspect: number };
   pose: CameraPose;
+  /** The stand-ins on the Stage now. Copied into the record. */
+  standIns: StandIn[];
   scaleConfirmed: boolean;
   frame: { widthPx: number; heightPx: number };
   referencePhoto: { file: string; role: string } | null;
   details: ShotDetails;
-  /** Present when an existing shot is updated: its creation time and stand-ins are kept. */
+  /** Present when an existing shot is updated: its creation time is kept. */
   previous?: Shot;
   now?: string;
 };
@@ -50,7 +52,7 @@ export function buildShot(c: ShotCapture): Shot {
     heightAboveGroundM: c.pose.positionM[1],
     scaleConfirmed: c.scaleConfirmed,
     move: { kind: "static", durationS: null, ease: null, endPose: null },
-    standIns: c.previous ? structuredClone(c.previous.standIns) : [],
+    standIns: structuredClone(c.standIns),
     frame: { file: frameFileFor(c.id), widthPx: c.frame.widthPx, heightPx: c.frame.heightPx },
     referencePhoto: c.referencePhoto ? { ...c.referencePhoto } : null,
     notes: c.details.notes,

@@ -1,13 +1,15 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, test, expect } from "vitest";
 import { buildShot, aspectIdFor, stripLine, heightText, frameFileFor } from "../src/model/shotRecord";
 import { validateShot } from "../src/model/schema";
 import { SENSORS } from "../src/camera/sensors";
 import { makeShot, HASH_A } from "./helpers/model";
 import { sceneIdForHash } from "../src/model/store";
+import type { StandIn } from "../src/model/types";
 
 const base = {
   id: "shot-001", number: 1, sceneId: sceneIdForHash(HASH_A),
   lens: { focalMm: 35, sensor: SENSORS[0]!, aspect: 16 / 9 },
+  standIns: [] as StandIn[],
   pose: { positionM: [1, 1.6, 2] as [number, number, number], headingDeg: 20, pitchDeg: -3, rollDeg: 0 },
   scaleConfirmed: true, frame: { widthPx: 1920, heightPx: 1080 }, referencePhoto: null,
   details: { name: "Entrance", sizeLabel: "WS" as const, job: "Show the room", action: "She enters", notes: "" },
@@ -28,8 +30,19 @@ describe("buildShot", () => {
     const s = buildShot({ ...base, lens: { ...base.lens, aspect: 2.39 }, frame: { widthPx: 1920, heightPx: 803 }, previous: prev, scaleConfirmed: false });
     expect(validateShot(s)).toEqual({ ok: true });
     expect(s.createdAt).toBe("2026-01-01T00:00:00.000Z");
-    expect(s.standIns).toEqual(prev.standIns);
     expect(s.scaleConfirmed).toBe(false);
+  });
+});
+
+describe("stand-ins", () => {
+  const figA: StandIn = { id: "standin-1", label: "Person A", heightM: 1.75, headHeightM: 0.23, positionM: [0, 0, -4], headingDeg: 0 };
+  const figB: StandIn = { id: "standin-2", label: "Person B", heightM: 1.62, headHeightM: 0.23, positionM: [1, 0, -5], headingDeg: 180 };
+  test("update_keeps_the_stage_stand_ins", () => {
+    const previous = buildShot({ ...base, standIns: [figA, figB] });
+    const updated = buildShot({ ...base, previous, standIns: [figA] });
+    expect(updated.standIns).toEqual([figA]);
+    expect(updated.standIns[0]).not.toBe(figA);
+    expect(validateShot(updated)).toEqual({ ok: true });
   });
 });
 
