@@ -1,8 +1,11 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import * as THREE from "three";
 import { scaleFromReference, fromMarbleMetadata, applyScale, heightPresetsState, noScale, manualScale } from "../src/scale/scale";
 import { createScaleStore } from "../src/scale/store";
-import { saveScale, loadScale, scaleKey, type StorageLike } from "../src/scale/persist";
+import { saveScale, loadScale } from "../src/scale/persist";
+import { openStore, type Store } from "../src/model/store";
+import { IDBFactory } from "fake-indexeddb";
+import { HASH_A, HASH_B, makeScene } from "./helpers/model";
 
 describe("scaleFromReference", () => {
   it("returns 2.5 for a 0.8 raw door of 2.0 m", () => {
@@ -89,24 +92,18 @@ describe("scale store", () => {
 });
 
 describe("scale persistence", () => {
-  const mem = (): StorageLike & { data: Map<string, string> } => {
-    const data = new Map<string, string>();
-    return { data, getItem: (k) => data.get(k) ?? null, setItem: (k, v) => { data.set(k, v); } };
-  };
-  it("round trips a record under a key that holds the hash", () => {
-    const st = mem();
-    const rec = manualScale(2.5, 1.2, { label: "door", knownLengthM: 2, measuredRaw: 0.8 }, "2026-11-21T00:00:00Z");
-    saveScale("abc123", { scale: rec, figureXZ: [1, 2] }, st);
-    expect([...st.data.keys()][0]).toContain("abc123");
-    expect(loadScale("abc123", st)).toEqual({ scale: rec, figureXZ: [1, 2] });
-    expect(loadScale("other", st)).toBeNull();
-    expect(scaleKey("abc123")).toContain("abc123");
+  let store: Store;
+  beforeEach(async () => { store = await openStore(new IDBFactory()); });
+  const rec = manualScale(2.5, 1.2, { label: "door", knownLengthM: 2, measuredRaw: 0.8 }, "2026-11-21T00:00:00.000Z");
+
+  it("round trips through the scene record", async () => {
+    await store.saveScene(makeScene(HASH_A));
+    await saveScale(HASH_A, { scale: rec, figureXZ: [1, 2] }, store);
+    expect(await loadScale(HASH_A, store)).toEqual({ scale: rec, figureXZ: [1, 2] });
+    expect((await store.getSceneByHash(HASH_A))!.scale).toEqual(rec);
+    expect(await loadScale(HASH_B, store)).toBeNull();
   });
-  it("returns null for a damaged record", () => {
-    const st = mem();
-    st.setItem(scaleKey("h"), "{not json");
-    expect(loadScale("h", st)).toBeNull();
-    st.setItem(scaleKey("h"), JSON.stringify({ scale: { source: "manual" } }));
-    expect(loadScale("h", st)).toBeNull();
+  it("does not invent a scene when there is none for the file", async () => {
+    await expect(saveScale(HASH_B, { scale: rec, figureXZ: null }, store)).rejects.toThrow(/no scene record/);
   });
 });

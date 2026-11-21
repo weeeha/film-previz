@@ -1,6 +1,7 @@
 // Sensor presets and the option lists the Stage view offers. Pure data.
 
-export type Sensor = { id: string; label: string; widthMm: number; heightMm: number };
+import type { Sensor } from "../model/types";
+export type { Sensor };
 
 export const SENSORS: Sensor[] = [
   { id: "full-frame", label: "Full frame", widthMm: 36, heightMm: 24 },

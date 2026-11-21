@@ -1,21 +1,8 @@
 import type * as THREE from "three";
 import { HEIGHT_PRESETS, type HeightPreset } from "../camera/sensors";
 
-export type ScaleSource = "marble" | "manual" | "none";
-
-export type ScaleReference = { label: string; knownLengthM: number; measuredRaw: number };
-
-/** The `Scene.scale` record from the spec, section 4. */
-export type SceneScale = {
-  source: ScaleSource;
-  /** Multiplier from raw units to metres; 1 when the source is "none". */
-  metricScaleFactor: number;
-  /** Subtracted from y after scaling, so the floor is y = 0. */
-  groundPlaneOffsetM: number;
-  reference: ScaleReference | null;
-  /** ISO time the user accepted the scale. */
-  confirmedAt: string | null;
-};
+import type { ScaleSource, ScaleReference, SceneScale } from "../model/types";
+export type { ScaleSource, ScaleReference, SceneScale };
 
 export function noScale(): SceneScale {
   return { source: "none", metricScaleFactor: 1, groundPlaneOffsetM: 0, reference: null, confirmedAt: null };

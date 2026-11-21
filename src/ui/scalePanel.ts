@@ -13,7 +13,8 @@ type Mode = "idle" | "marking" | "measuring";
 export type ScalePanel = {
   root: HTMLElement;
   /** Call when a scene file is opened: pass its SHA-256, or null when no scene is open. Restores a stored scale. */
-  setScene(hash: string | null): void;
+  /** Resolves once any saved scale for the file has been read and applied. */
+  setScene(hash: string | null): Promise<void>;
   /** Call after the collider or the scene changed, so the panel can enable or disable marking. */
   refresh(): void;
   dispose(): void;
@@ -224,7 +225,7 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
       const rec = manualScale(factor, groundOffsetM, { label: label.value.trim() || "reference", knownLengthM: knownM, measuredRaw }, new Date().toISOString());
       placeFigure(figureBeside(viewer.content.localToWorld(lower.clone())));
       store.set(rec);
-      if (hash) saveScale(hash, { scale: rec, figureXZ });
+      if (hash) saveScale(hash, { scale: rec, figureXZ }).catch((e) => console.warn("could not save the scale", e));
       // The marked points stay put in the group, so the check is a real distance in the scaled scene.
       const d = worldDistance(a, b);
       check.dd.textContent = `Measure tool reads ${d.total.toFixed(2)} m`;
@@ -256,12 +257,13 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
 
   return {
     root,
-    setScene(h) {
+    async setScene(h) {
       hash = h;
       viewer.setScale(1, 0, false);
       resetView();
       store.set(noScale());
-      const stored = h ? loadScale(h) : null;
+      const stored = h ? await loadScale(h) : null;
+      if (hash !== h) return; // another file was opened while this one was being read
       if (stored && stored.scale.source !== "none") {
         const s = stored.scale;
         viewer.setScale(s.metricScaleFactor, s.groundPlaneOffsetM, true);

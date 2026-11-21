@@ -7,12 +7,8 @@ import * as THREE from "three";
 //   rollDeg:    positive turns the camera clockwise seen from behind it (up vector leans right).
 //   positionM:  world position, y up. Metres once the scene's scale is confirmed.
 
-export type CameraPose = {
-  positionM: [number, number, number];
-  headingDeg: number;
-  pitchDeg: number;
-  rollDeg: number;
-};
+import type { CameraPose } from "../model/types";
+export type { CameraPose };
 
 const DEG = Math.PI / 180;
 

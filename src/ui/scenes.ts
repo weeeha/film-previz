@@ -1,6 +1,7 @@
 import { Viewer } from "../viewer/scene";
 import type { ScalePanel } from "./scalePanel";
 import { sha256Hex } from "../scale/persist";
+import { appStore } from "../model/store";
 import { el } from "./dom";
 
 export type Scenes = {
@@ -30,7 +31,14 @@ export function createScenes(viewer: Viewer, panel: ScalePanel, onSceneName: (na
   const root = el("div", { className: "page" }, head, fields, status, preview, panel.root);
 
   const openSplat = async (f: File): Promise<number> => {
-    panel.setScene(await sha256Hex(f));
+    const sha256 = await sha256Hex(f);
+    // Match the file to its scene record by hash, or make the record, so the scale has somewhere to be kept.
+    try {
+      const store = await appStore();
+      const opened = await store.openSceneFile({ name: f.name, bytes: f.size, sha256 });
+      if (opened.kind === "new") await store.saveScene(opened.draft);
+    } catch (e) { console.warn("could not open the scene record", e); }
+    await panel.setScene(sha256);
     return viewer.loadSplat(f);
   };
   const loaded = (name: string, n: number) => {
