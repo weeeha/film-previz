@@ -1,0 +1,15 @@
+scenes/
+reference/
+out/
+*.spz
+*.ply
+*.glb
+*.splat
+*.ksplat
+*.sog
+*.jpg
+*.jpeg
+*.png
+node_modules/
+dist/
+.DS_Store
