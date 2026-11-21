@@ -3,11 +3,14 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { SparkRenderer, SplatMesh, SplatFileType } from "@sparkjsdev/spark";
 import { WalkControls } from "./walk";
 import { applyScale } from "../scale/scale";
+import { ShotRig } from "./shotRig";
+import { grabFrame, type FrameGrab } from "../camera/frameGrab";
 
 /** Helpers and overlays (collider wireframe, markers) go on this layer. Hide it for frame grabs. */
 export const HELPER_LAYER = 1;
 
-const CLEAR = 0x111111;
+/** The draft's viewport grey, the same in both themes. */
+const CLEAR = 0x4a4d53;
 
 function fileTypeFor(name: string): SplatFileType | undefined {
   const ext = name.split(".").pop()?.toLowerCase();
@@ -24,10 +27,21 @@ export class Viewer {
   readonly renderer: THREE.WebGLRenderer;
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(50, 1, 0.05, 200);
+  /** The virtual film camera. Its lens comes from the lens panel (applyLens), its pose from the camera panel. */
+  readonly shotCamera = new THREE.PerspectiveCamera(50, 16 / 9, 0.05, 200);
   readonly walk: WalkControls;
+  /** True: the viewport shows the shot camera (the page draws the frame mask). False: the walk camera. */
+  lookThrough = false;
+  /** Called after the scale changed the content, so the shot camera panel can re-read its pose. */
+  readonly afterScale = new Set<() => void>();
+  /** How the last frame grab's sort settle went. For tests and the report. */
+  lastSettle: { ok: boolean; ms: number } | null = null;
   /** Holds the splat and the collider. Both carry the 180 degree turn about x (OpenCV axes to three.js). */
   readonly content = new THREE.Group();
   private readonly spark: SparkRenderer;
+  private readonly displayCamera = new THREE.PerspectiveCamera(50, 1, 0.05, 200);
+  private readonly rig = new ShotRig(HELPER_LAYER);
+  private running = true;
   private splat: SplatMesh | null = null;
   private collider: THREE.Mesh | null = null;
   private readonly colliderMat = new THREE.MeshBasicMaterial({ color: 0x00ff88, wireframe: true, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
@@ -46,6 +60,12 @@ export class Viewer {
     this.spark = new SparkRenderer({ renderer: this.renderer });
     this.scene.add(this.spark);
     this.scene.add(this.content);
+    this.scene.add(this.rig.group);
+    this.rig.setLabel("1");
+    this.shotCamera.rotation.order = "YXZ";
+    this.shotCamera.position.set(0, 0.16, 0.8);
+    this.shotCamera.layers.disable(HELPER_LAYER);
+    this.displayCamera.layers.disable(HELPER_LAYER);
 
     this.walk = new WalkControls(this.camera, this.renderer.domElement);
     // Phase 0 start pose: 2 m from the room centre toward the front wall, looking at the back wall (raw units).
@@ -68,8 +88,91 @@ export class Viewer {
   private frame(t: number): void {
     const dt = this.last ? Math.min((t - this.last) / 1000, 0.1) : 0;
     this.last = t;
+    if (!this.running) return;
     this.walk.update(dt);
-    this.renderer.render(this.scene, this.camera);
+    this.renderer.render(this.scene, this.activeCamera());
+  }
+
+  /** Stop or start drawing frames. The animation loop stays installed. */
+  setRunning(on: boolean): void { this.running = on; this.last = 0; }
+  get isRunning(): boolean { return this.running; }
+
+  /** Shot number drawn beside the frustum in walk view. */
+  setShotNumber(n: number | string): void { this.rig.setLabel(String(n)); }
+
+  /** Redraw the frustum helper for the current shot camera and content scale. */
+  syncRig(): void { this.rig.update(this.shotCamera, 0.5 * this.content.scale.x); }
+
+  /** Size of the frame inside the viewport, the same rule as the page's frame mask (16 px margin, the shot's aspect). */
+  frameSize(): { w: number; h: number } | null {
+    const W = this.container.clientWidth, H = this.container.clientHeight;
+    const ar = this.shotCamera.aspect;
+    if (W <= 32 || H <= 32) return null;
+    const w = Math.min(W - 32, (H - 32) * ar);
+    return { w, h: w / ar };
+  }
+
+  /**
+   * The camera the viewport draws. In look-through it is a copy of the shot camera widened so the shot's frame
+   * fills exactly the frame mask and the viewport shows a little more around it (dimmed by the mask).
+   */
+  private activeCamera(): THREE.PerspectiveCamera {
+    this.syncRig();
+    if (!this.lookThrough) return this.camera;
+    const fs = this.frameSize();
+    const W = this.container.clientWidth, H = this.container.clientHeight;
+    if (!fs) return this.camera;
+    const d = this.displayCamera;
+    this.shotCamera.updateMatrixWorld(true);
+    d.position.copy(this.shotCamera.position);
+    d.quaternion.copy(this.shotCamera.quaternion);
+    d.aspect = W / H;
+    d.fov = (2 * Math.atan(Math.tan((this.shotCamera.fov * Math.PI) / 360) * (H / fs.h)) * 180) / Math.PI;
+    d.updateProjectionMatrix();
+    d.updateMatrixWorld(true);
+    return d;
+  }
+
+  /** The camera the viewport shows right now, after one sync. Used by the tests. */
+  currentCamera(): THREE.PerspectiveCamera { return this.activeCamera(); }
+
+  /**
+   * Let Spark sort the splats for `camera`, then draw once so the ordering is in use.
+   * Spark sorts for the camera of the last render and does it asynchronously, so a grab taken straight after
+   * a pose change would use the order for the previous view. Calls the public `update` and waits until
+   * Spark reports it is not sorting, has nothing dirty, and its sort view matches this camera.
+   */
+  async settleSort(camera: THREE.PerspectiveCamera, timeoutMs = 90_000): Promise<boolean> {
+    const t0 = performance.now();
+    if (!this.splat) { this.lastSettle = { ok: true, ms: 0 }; return true; }
+    const pos = new THREE.Vector3(), dir = new THREE.Vector3();
+    for (;;) {
+      this.scene.updateMatrixWorld(true);
+      camera.updateMatrixWorld(true);
+      await this.spark.update({ scene: this.scene, camera });
+      camera.getWorldPosition(pos);
+      camera.getWorldDirection(dir);
+      const s = this.spark;
+      if (!s.sorting && !s.sortDirty && pos.distanceTo(s.sortedCenter) <= 0.001 && dir.dot(s.sortedDir) >= 0.999) break;
+      if (performance.now() - t0 > timeoutMs) { this.lastSettle = { ok: false, ms: performance.now() - t0 }; return false; }
+      await new Promise((r) => setTimeout(r, 40));
+    }
+    this.renderer.render(this.scene, camera); // puts the new ordering into the splat uniforms
+    this.lastSettle = { ok: true, ms: performance.now() - t0 };
+    return true;
+  }
+
+  /** One JPEG of the shot camera at widthPx wide, helpers hidden. Pauses the loop so no other view re-sorts the splats meanwhile. */
+  async grabShot(widthPx: number): Promise<FrameGrab> {
+    const wasRunning = this.running;
+    this.running = false;
+    try {
+      const ok = await this.settleSort(this.shotCamera);
+      if (!ok) throw new Error("The splats did not finish sorting for the shot camera. Try again.");
+      return await grabFrame(this.renderer, this.scene, this.shotCamera, widthPx, this.shotCamera.aspect);
+    } finally {
+      this.running = wasRunning;
+    }
   }
 
   async loadSplat(file: File): Promise<number> {
@@ -148,8 +251,15 @@ export class Viewer {
     applyScale(this.content, factor, groundOffsetM);
     cam.x = lx * factor + this.content.position.x;
     cam.z = lz * factor + this.content.position.z;
+    const sc = this.shotCamera.position;
+    const sx = (sc.x - oldP.x) / oldS, sz = (sc.z - oldP.z) / oldS;
+    sc.x = sx * factor + this.content.position.x;
+    sc.z = sz * factor + this.content.position.z;
+    sc.y = metric ? 1.6 : 0.16;
+    this.shotCamera.updateMatrixWorld(true);
     this.walk.speed = this.walk.speed / oldS * factor;
     this.walk.setEyeHeight(metric ? 1.6 : 0.16);
+    this.afterScale.forEach((fn) => fn());
   }
 
   setColliderVisible(on: boolean): void {
@@ -164,7 +274,7 @@ export class Viewer {
     const px = new Uint8Array(4);
     for (const fx of [0.2, 0.35, 0.5, 0.65, 0.8]) for (const fy of [0.2, 0.35, 0.5, 0.65, 0.8]) {
       gl.readPixels(Math.floor(w * fx), Math.floor(h * fy), 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
-      if (px[0] !== 17 || px[1] !== 17 || px[2] !== 17) return true;
+      if (Math.abs(px[0]! - 0x4a) > 2 || Math.abs(px[1]! - 0x4d) > 2 || Math.abs(px[2]! - 0x53) > 2) return true;
     }
     return false;
   }
@@ -173,6 +283,7 @@ export class Viewer {
     this.renderer.setAnimationLoop(null);
     this.observer.disconnect();
     this.walk.dispose();
+    this.rig.dispose();
     this.splat?.dispose();
     this.collider?.geometry.dispose();
     this.colliderMat.dispose();

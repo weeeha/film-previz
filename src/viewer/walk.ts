@@ -5,6 +5,8 @@ import * as THREE from "three";
 export class WalkControls {
   eyeHeight: number;
   speed: number;
+  /** When false, drag and keys are ignored (the Stage looks through the shot camera instead). */
+  enabled = true;
   private yaw = 0;
   private pitch = 0;
   private keys = new Set<string>();
@@ -21,15 +23,15 @@ export class WalkControls {
       target.addEventListener(type, fn as EventListener);
       this.cleanup.push(() => target.removeEventListener(type, fn as EventListener));
     };
-    on(dom, "pointerdown", (e: PointerEvent) => { this.dragging = true; dom.setPointerCapture(e.pointerId); });
-    on(dom, "pointerup", (e: PointerEvent) => { this.dragging = false; dom.releasePointerCapture(e.pointerId); });
+    on(dom, "pointerdown", (e: PointerEvent) => { if (!this.enabled) return; this.dragging = true; dom.setPointerCapture(e.pointerId); });
+    on(dom, "pointerup", (e: PointerEvent) => { this.dragging = false; if (dom.hasPointerCapture(e.pointerId)) dom.releasePointerCapture(e.pointerId); });
     on(dom, "pointermove", (e: PointerEvent) => {
       if (!this.dragging) return;
       this.yaw -= e.movementX * 0.003;
       this.pitch = Math.max(-1.5, Math.min(1.5, this.pitch - e.movementY * 0.003));
       this.apply();
     });
-    on(window, "keydown", (e: KeyboardEvent) => { if (!isTyping(e)) this.keys.add(e.code); });
+    on(window, "keydown", (e: KeyboardEvent) => { if (this.enabled && !isTyping(e)) this.keys.add(e.code); });
     on(window, "keyup", (e: KeyboardEvent) => { this.keys.delete(e.code); });
     on(window, "blur", () => { this.keys.clear(); });
   }
@@ -53,6 +55,7 @@ export class WalkControls {
   }
 
   update(dt: number): void {
+    if (!this.enabled) { this.camera.position.y = this.eyeHeight; return; }
     const f = (this.keys.has("KeyW") ? 1 : 0) - (this.keys.has("KeyS") ? 1 : 0);
     const r = (this.keys.has("KeyD") ? 1 : 0) - (this.keys.has("KeyA") ? 1 : 0);
     if (f || r) {

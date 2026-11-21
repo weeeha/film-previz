@@ -13,9 +13,16 @@
     <a href="#/stage" data-route="/stage">Stage</a>
     <a href="#/shots" data-route="/shots">Shots</a>
   </nav>
-  <div class="scene-chip"><span class="meta" id="scene-chip">No scene loaded</span></div>
+  <div class="scene-chip">
+    <span class="name" id="scene-name">No scene loaded</span>
+    <span class="badge warn" id="scale-chip">Scale not confirmed</span>
+  </div>
 </header>
 <main id="main"></main>
+<div class="too-small" role="status">
+  <h1>This tool needs a larger window</h1>
+  <p>film-previz works in windows at least 900 px wide. Make this window wider to continue.</p>
+</div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

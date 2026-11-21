@@ -7,7 +7,7 @@ const collider = path.resolve("scenes/set-01-collider.glb");
 const truthFile = path.resolve("scenes/set-01-truth.json");
 
 type V = {
-  renderer: { setAnimationLoop(f: null): void };
+  setRunning(on: boolean): void;
   content: { scale: { x: number }; position: { y: number } };
   scene: { getObjectByName(n: string): { layers: { mask: number }; position: { y: number }; geometry: { boundingBox: { min: { y: number }; max: { y: number } } | null; computeBoundingBox(): void } } | undefined };
   localToClient(p: [number, number, number]): { x: number; y: number };
@@ -19,14 +19,14 @@ const viewerCall = <T>(page: Page, fn: (v: V) => T) =>
 const toLocal = (m: [number, number, number]): [number, number, number] => [m[0] / 2.5, (m[1] - 1.2) / 2.5, m[2] / 2.5];
 
 async function open(page: Page, withCollider: boolean): Promise<void> {
-  await page.goto("/#/stage");
+  await page.goto("/#/");
   await page.setInputFiles("#splat-file", splat);
   if (withCollider) await page.setInputFiles("#collider-file", collider);
-  await expect(page.locator("#stage-status")).toHaveAttribute("data-splats", /^\d+$/, { timeout: 90_000 });
-  if (withCollider) await expect(page.locator("#stage-status")).toHaveAttribute("data-collider-triangles", /^\d+$/, { timeout: 30_000 });
+  await expect(page.locator("#scene-status")).toHaveAttribute("data-splats", /^\d+$/, { timeout: 90_000 });
+  if (withCollider) await expect(page.locator("#scene-status")).toHaveAttribute("data-collider-triangles", /^\d+$/, { timeout: 30_000 });
   await page.waitForTimeout(1500); // let Spark finish its first sort
-  // Chromium on SwiftShader draws 500k splats at about 1 fps: stop the loop so clicks and checks are not starved.
-  await viewerCall(page, (v) => v.renderer.setAnimationLoop(null));
+  // Chromium on SwiftShader draws 500k splats at about 1 fps: stop the loop (setRunning) so clicks and checks are not starved.
+  await viewerCall(page, (v) => v.setRunning(false));
   await page.locator("#scale-panel").scrollIntoViewIfNeeded();
 }
 
@@ -104,7 +104,7 @@ test("scale_two_point_marking_then_measure_and_restore", async ({ page }) => {
 });
 
 test("scale_marking_needs_a_collider_and_says_so", async ({ page }) => {
-  await page.goto("/#/stage");
+  await page.goto("/#/");
   await expect(page.locator("#scale-mark")).toBeDisabled();
   await expect(page.locator("#scale-msg")).toContainText("collider");
   await expect(page.locator("#scale-badge")).toContainText("Not confirmed");

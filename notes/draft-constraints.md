@@ -128,3 +128,21 @@ Unslop audit: render tier clean in light and dark at 1280 px on 6 screens (one w
 ## Owner approval (task 8)
 
 - 2026-11-21: the owner approved the HTML draft in the build session ("Approve, build on"), with no changes requested. Spec criterion 13 is met. Phases 2 and 3 may start.
+
+## Stage view (task 13)
+
+`unslop` run in constraints mode (skill `unslop:unslop`, Phase 1) for the Stage route, against the approved draft. The rules of the table above still bind; these are the points the app needs that the static draft could not show.
+
+| Rule | What it means for the app Stage |
+|---|---|
+| CMP-6 (every control does something) | The draft's "Edit presets", "Add stand-in", "Add reference photo", "Update shot", "Save as new shot" and "Save shot" have no behaviour in this task, so none is drawn. Stand-ins and Reference photo are closed sections that say they arrive in a later step. The shot fields carry a hint that they are not saved yet. |
+| CMP-7 (one filled control) | "Save frame" is the only filled control. "Move camera here" is outlined. |
+| LAY-15 (no layout move on state) | The frame mask, the look-through switch and the preset chips change colour or visibility only. Disabled presets keep their size. The scale notice is in the flow at rest and hidden when scale is confirmed, as in the draft. |
+| STA-6 (never colour alone) | The scale chip reads "Scale confirmed, door 2.00 m" or "Scale not confirmed". Unconfirmed heights are labelled "Height, model units" and the save line says "unverified". |
+| STA-1 (all states) | Empty strip (no shots yet), no scene loaded, scale not confirmed (presets off), look-through off and on. Loading shows "Saving frame" in the footer line. Errors from the frame grab are printed there. |
+| STA-3 (focus) | Chips use the draft's focus ring. The viewport and the inspector scroll area take focus (the viewport is where the nudge keys work). |
+| TYP-7, TYP-13 | Draft type scale only (12, 13, 14, 16, 20 px). No mono on the Stage. |
+| EFF-1 to EFF-6 | The shot camera is drawn in walk view as thin white lines and a small numbered square, on the helper layer. No glow, no fill. |
+| Frame mask | DOM only (a bordered box with a scrim) and never part of a frame grab. The grab renders the shot camera into its own target with the helper layer off. |
+
+Audit follows at the end of the task, with screenshots at 1440 x 900 in light and dark, Chromium and WebKit, in `reference/app/`.
