@@ -10,7 +10,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const outDir = path.resolve(here, "..", "scenes");
+const outDir = path.resolve(here, "..", "..", "scenes");
 fs.mkdirSync(outDir, { recursive: true });
 
 const Y_OFFSET = 1.2;
