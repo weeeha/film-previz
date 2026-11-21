@@ -25,6 +25,9 @@ test("reference_compare_side_by_side_overlay_swap_and_no_leaks", async ({ page }
 
   await page.goto("/#/stage");
   await page.waitForFunction(() => "__viewer" in window);
+  // Look through starts on, as in the draft. This test begins from the walk view.
+  await expect(page.locator("#through")).toBeChecked();
+  await page.locator("#through").uncheck();
 
   // empty state, then load through the real file input
   await expect(page.locator("#ref-summary")).toHaveText("None yet");

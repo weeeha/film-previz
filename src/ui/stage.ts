@@ -34,7 +34,7 @@ function isFormTarget(t: EventTarget | null): boolean {
 /** The Stage route, built from draft/stage.html. */
 export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, session: Session): Stage {
   // ----- bar -----
-  const through = el("input", { type: "checkbox", id: "through" });
+  const through = el("input", { type: "checkbox", id: "through", checked: true });
   const maskText = el("span", { className: "meta", id: "mask-text" });
   const walkHint = el("span", { className: "meta spacer", id: "vp-hint" });
   const bar = el("div", { className: "stage-bar" },

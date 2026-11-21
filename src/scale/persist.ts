@@ -6,7 +6,12 @@ export type StoredScale = { scale: SceneScale; figureXZ: [number, number] | null
 
 /** SHA-256 of the file's bytes as lower-case hex. */
 export async function sha256Hex(file: Blob): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", await file.arrayBuffer());
+  return sha256Bytes(await file.arrayBuffer());
+}
+
+/** SHA-256 of bytes already in memory, as lower-case hex. */
+export async function sha256Bytes(bytes: BufferSource): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes);
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 

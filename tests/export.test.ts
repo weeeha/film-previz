@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import { unzipSync, strFromU8 } from "fflate";
 import { validateShot } from "../src/model/schema";
-import { SHOT_LIST_COLUMNS, cameraSentence, headerLine, separatorLine, shotListMarkdown } from "../src/export/shotList";
+import { SHOT_LIST_COLUMNS, cameraSentence, nearestMarker, headerLine, separatorLine, shotListMarkdown } from "../src/export/shotList";
 import { locationSheetMarkdown } from "../src/export/locationSheet";
 import { buildExportZip, exportZipName } from "../src/export/zip";
 import { makeScene, makeShot } from "./helpers/model";
@@ -42,6 +42,33 @@ describe("shot list", () => {
     for (const part of ["35 mm", "36 mm", "1.6 m", "static", "full frame", "heading 40"]) expect(t).toContain(part);
     expect(t.startsWith("Medium shot, ")).toBe(true);
     expect(t.endsWith(".")).toBe(true);
+  });
+
+  it("camera_sentence_names_the_nearest_marker_and_the_distance", () => {
+    const markers = [
+      { id: "marker-1", label: "door", positionM: [1, 1, -4] as [number, number, number] },
+      { id: "marker-2", label: "window", positionM: [-3, 1.2, 2] as [number, number, number] },
+    ];
+    const s = makeShot(scene.id, 1, { pose: { positionM: [1, 1.6, -1.5], headingDeg: 40, pitchDeg: 0, rollDeg: 0 } });
+    const t = cameraSentence(s, { markers });
+    expect(t).toContain(", 2.5 m from the door, ");
+    expect(t).not.toContain("from the scene origin");
+    expect(t).not.toContain("window");
+    // the other marker is nearer from the other side of the room
+    const w = makeShot(scene.id, 2, { pose: { positionM: [-2.5, 1.6, 1.5], headingDeg: 0, pitchDeg: 0, rollDeg: 0 } });
+    expect(cameraSentence(w, { markers })).toContain(", 0.71 m from the window, ");
+    // distance is on the floor: height does not count
+    expect(nearestMarker([1, 9, -1.5], markers)?.distanceM).toBeCloseTo(2.5, 6);
+    // no markers, or no confirmed scale: the origin wording stays
+    expect(cameraSentence(s, { markers: [] })).toContain("from the scene origin");
+    expect(cameraSentence(s)).toContain("from the scene origin");
+    const unconfirmed = makeShot(scene.id, 3, { scaleConfirmed: false, heightAboveGroundM: 0.64, pose: { positionM: [1, 0.64, -1.5], headingDeg: 0, pitchDeg: 0, rollDeg: 0 } });
+    const u = cameraSentence(unconfirmed, { markers });
+    expect(u).toContain("from the scene origin");
+    expect(u).not.toContain("door");
+    // the table row carries it
+    const sc = makeScene(undefined, { markers });
+    expect(tableRows(shotListMarkdown(sc, [s]))[0]).toContain("2.5 m from the door");
   });
 
   it("unconfirmed_scale_marks_heights", () => {

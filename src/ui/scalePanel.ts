@@ -12,6 +12,12 @@ type Mode = "idle" | "marking" | "measuring";
 
 export type ScalePanel = {
   root: HTMLElement;
+  /** The row of buttons under the form. The Scenes view adds its way forward ("Open Stage") here. */
+  actions: HTMLElement;
+  /** While true, clicks on the viewport are not read as scale marks or measure picks (the marker tool is using them). */
+  suspendPicking(on: boolean): void;
+  /** Runs after Apply scale has changed the content scale and the new scale is saved. Returns the way to remove it. */
+  onApplied(fn: () => void): () => void;
   /** Call when a scene file is opened: pass its SHA-256, or null when no scene is open. Restores a stored scale. */
   /** Resolves once any saved scale for the file has been read and applied. */
   setScene(hash: string | null): Promise<void>;
@@ -46,6 +52,8 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
   let measurePicks: THREE.Vector3[] = [];
   let figure: THREE.Mesh | null = null;
   let figureXZ: [number, number] | null = null;
+  let suspended = false;
+  const appliedSubs = new Set<() => void>();
 
   const markers = new THREE.Group();
   markers.layers.set(HELPER_LAYER);
@@ -188,7 +196,7 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
   const onDown = (e: PointerEvent) => { down = { x: e.clientX, y: e.clientY }; };
   const onUp = (e: PointerEvent) => {
     const d = down; down = null;
-    if (!d || mode === "idle") return;
+    if (!d || mode === "idle" || suspended) return;
     if (Math.hypot(e.clientX - d.x, e.clientY - d.y) > CLICK_SLOP_PX) return; // a drag is looking around
     const p = viewer.pickCollider(e.clientX, e.clientY);
     if (!p) { msg.textContent = "No surface under that click. Click on the room surfaces."; return; }
@@ -212,8 +220,16 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
     applyBtn.disabled = true;
   });
 
-  applyBtn.addEventListener("click", () => {
+  applyBtn.addEventListener("click", () => { void apply(); });
+
+  /**
+   * The scale is written to IndexedDB before the badge, the header chip or the Stage learn about it. The store
+   * update is what paints "confirmed" everywhere, so painting first would let a reload in that gap lose the scale.
+   */
+  async function apply(): Promise<void> {
     if (marks.length !== 2) return;
+    const h = hash;
+    applyBtn.disabled = true;
     try {
       const [a, b] = marks as [THREE.Vector3, THREE.Vector3];
       const measuredRaw = a.distanceTo(b);
@@ -221,11 +237,17 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
       const factor = scaleFromReference(measuredRaw, knownM);
       const lower = a.y <= b.y ? a : b;
       const groundOffsetM = factor * lower.y;
-      viewer.setScale(factor, groundOffsetM, true);
       const rec = manualScale(factor, groundOffsetM, { label: label.value.trim() || "reference", knownLengthM: knownM, measuredRaw }, new Date().toISOString());
+      viewer.setScale(factor, groundOffsetM, true);
       placeFigure(figureBeside(viewer.content.localToWorld(lower.clone())));
+      let saveError = "";
+      if (h) {
+        msg.textContent = "Saving the scale";
+        try { await saveScale(h, { scale: rec, figureXZ }); }
+        catch (e) { saveError = e instanceof Error ? e.message : String(e); console.warn("could not save the scale", e); }
+      }
+      if (hash !== h) return; // another file was opened while the scale was being saved
       store.set(rec);
-      if (hash) saveScale(hash, { scale: rec, figureXZ }).catch((e) => console.warn("could not save the scale", e));
       // The marked points stay put in the group, so the check is a real distance in the scaled scene.
       const d = worldDistance(a, b);
       check.dd.textContent = `Measure tool reads ${d.total.toFixed(2)} m`;
@@ -234,12 +256,14 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
       measurePicks = [];
       clearMarkers();
       measureLine.textContent = "Measure tool: click two points to read the distance in metres.";
-      msg.textContent = "Scale is applied and the floor is at 0. Next: place the camera.";
-      refresh();
+      msg.textContent = saveError ? `Scale is applied but was not saved: ${saveError}` : "Scale is applied and the floor is at 0. Next: place the camera.";
+      appliedSubs.forEach((fn) => fn());
     } catch (err) {
       msg.textContent = err instanceof Error ? err.message : String(err);
+    } finally {
+      refresh();
     }
-  });
+  }
 
   const unsub = store.subscribe(paintScale);
 
@@ -257,6 +281,9 @@ export function createScalePanel(viewer: Viewer, store: ScaleStore = sceneScale)
 
   return {
     root,
+    actions: row,
+    suspendPicking(on) { suspended = on; },
+    onApplied(fn) { appliedSubs.add(fn); return () => { appliedSubs.delete(fn); }; },
     async setScene(h) {
       hash = h;
       viewer.setScale(1, 0, false);

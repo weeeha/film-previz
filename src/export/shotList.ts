@@ -1,6 +1,6 @@
 // shot-list.md: the 12 columns of film-craft's shot list template, filled from the saved shots (docs/spec.md section 3).
 import { heightText } from "../model/shotRecord";
-import type { Scene, Shot, SizeLabel } from "../model/types";
+import type { Marker, Scene, Shot, SizeLabel } from "../model/types";
 
 /** In the order of film-craft's `templates/shot-list.md`. The header test reads the template and compares. */
 export const SHOT_LIST_COLUMNS = [
@@ -51,23 +51,35 @@ function moveText(s: Shot): string {
 /**
  * The camera sentence for one shot, for example
  * "Medium shot, 35 mm lens on a full frame sensor 36 mm wide, camera at 1.6 m, at x 0, z 3 from the scene origin, heading 40 degrees, static."
- * The position part is its own piece so task 19 can name the nearest marker instead of the origin.
+ * With confirmed scale and at least one marker on the scene, the position part names the nearest marker and the
+ * distance to it on the floor ("2.5 m from the door"). Otherwise it gives x and z from the scene origin.
  */
 export function cameraSentence(s: Shot, scene?: Pick<Scene, "markers">): string {
-  void scene;
   const parts: string[] = [];
   if (s.sizeLabel) parts.push(SIZE_WORDS[s.sizeLabel]);
   parts.push(`${num(s.lens.focalLengthMm)} mm lens on a ${s.lens.sensor.label.toLowerCase()} sensor ${num(s.lens.sensor.widthMm)} mm wide`);
   parts.push(s.scaleConfirmed ? `camera at ${heightText(s)}` : `camera ${HEIGHTS_UNVERIFIED}`);
-  parts.push(positionPart(s));
+  parts.push(positionPart(s, scene?.markers ?? []));
   parts.push(`heading ${num(s.pose.headingDeg)} degrees`);
   parts.push(moveText(s));
   const sentence = parts.join(", ");
   return sentence.charAt(0).toUpperCase() + sentence.slice(1) + ".";
 }
 
+/** The marker closest to the camera on the floor plane (x and z), and that distance in metres. */
+export function nearestMarker(pos: [number, number, number], markers: Marker[]): { marker: Marker; distanceM: number } | null {
+  let best: { marker: Marker; distanceM: number } | null = null;
+  for (const m of markers) {
+    const d = Math.hypot(pos[0] - m.positionM[0], pos[2] - m.positionM[2]);
+    if (!best || d < best.distanceM) best = { marker: m, distanceM: d };
+  }
+  return best;
+}
+
 /** Where the camera stands. Distances are metres once the scale is confirmed, otherwise model units. */
-function positionPart(s: Shot): string {
+function positionPart(s: Shot, markers: Marker[]): string {
+  const near = s.scaleConfirmed ? nearestMarker(s.pose.positionM, markers.filter((m) => m.label.trim())) : null;
+  if (near) return `${num(near.distanceM)} m from the ${near.marker.label.trim()}`;
   const [x, , z] = s.pose.positionM;
   const unit = s.scaleConfirmed ? "" : " units";
   return `at x ${num(x)}${unit}, z ${num(z)}${unit} from the scene origin`;

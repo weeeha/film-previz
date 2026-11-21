@@ -21,6 +21,8 @@ test("stage_lens_readout_matches_the_draft_and_presets_are_off_without_scale", a
   // header: scene name and scale chip on every route
   await expect(page.locator("#scale-chip")).toHaveText("Scale not confirmed");
   await expect(page.locator("#scene-name")).toHaveText("No scene loaded");
+  // look through shot camera starts on, as in the draft
+  await expect(page.locator("#through")).toBeChecked();
   // presets disabled, with the draft's wording
   for (const id of ["low", "hip", "eye", "high"]) await expect(page.locator(`#hp-${id}`)).toBeDisabled();
   await expect(page.locator("#scale-notice")).toContainText("Scale not confirmed. Heights are in model units, so the presets are off.");
@@ -74,7 +76,7 @@ test("stage_lens_accurate_still_35mm_then_85mm_from_the_same_pose", async ({ pag
   await page.setInputFiles("#collider-file", collider);
   await expect(page.locator("#scene-status")).toHaveAttribute("data-splats", /^\d+$/, { timeout: 90_000 });
   await expect(page.locator("#scene-status")).toHaveAttribute("data-collider-triangles", /^\d+$/, { timeout: 30_000 });
-  await expect(page.locator("#scene-name")).toHaveText("set-01-500k.spz");
+  await expect(page.locator("#scene-name")).toHaveText("set-01-500k");
   await page.waitForTimeout(1500);
   await viewerCall(page, (v) => v.setRunning(false)); // SwiftShader draws 500k splats at about 1 fps
 

@@ -182,10 +182,12 @@ export class Viewer {
     }
   }
 
-  async loadSplat(file: File): Promise<number> {
+  /** `asType` forces the format, for an SPZ that turns out to be a PLY with the wrong extension. */
+  async loadSplat(file: File, asType?: "ply" | "spz"): Promise<number> {
     const url = URL.createObjectURL(file);
     try {
-      const mesh = new SplatMesh({ url, fileType: fileTypeFor(file.name) });
+      const fileType = asType ? (asType === "ply" ? SplatFileType.PLY : SplatFileType.SPZ) : fileTypeFor(file.name);
+      const mesh = new SplatMesh({ url, fileType });
       await mesh.initialized;
       if (this.splat) { this.content.remove(this.splat); this.splat.dispose(); }
       mesh.rotation.x = Math.PI;
@@ -220,6 +222,44 @@ export class Viewer {
   }
 
   get hasCollider(): boolean { return this.collider !== null; }
+
+  /** Take the collider out, for example when another scene is opened. */
+  clearCollider(): void {
+    if (!this.collider) return;
+    this.content.remove(this.collider);
+    this.collider.geometry.dispose();
+    this.collider = null;
+  }
+
+  /** World-space box of the splat centres, or null when no splat is loaded. */
+  splatBounds(): THREE.Box3 | null {
+    if (!this.splat) return null;
+    this.scene.updateMatrixWorld(true);
+    const box = this.splat.getBoundingBox(true).clone();
+    if (box.isEmpty()) return null;
+    return box.applyMatrix4(this.splat.matrixWorld);
+  }
+
+  /**
+   * Put the walk camera in a sensible place for a scene that has just opened: inside the splat bounds, a quarter
+   * of the depth behind the centre and looking toward the scene front (world heading `frontHeadingDeg`, 0 looks
+   * down -z), at 1.6 m when the scale is metric. With no metric scale the eye sits at about the share of the
+   * height a 1.6 m eye has in a 3 m room, which is a guess and is not measured on a real export.
+   */
+  resetWalkView(frontHeadingDeg: number, metric: boolean): void {
+    const box = this.splatBounds();
+    if (!box) return;
+    const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+    const h = (frontHeadingDeg * Math.PI) / 180;
+    const dir = new THREE.Vector3(Math.sin(h), 0, -Math.cos(h)); // heading 0 looks down -z, 90 looks down +x (the same as applyPose)
+    const depth = Math.abs(dir.x) * size.x + Math.abs(dir.z) * size.z;
+    const pos = c.clone().addScaledVector(dir, -0.25 * depth);
+    pos.x = THREE.MathUtils.clamp(pos.x, box.min.x, box.max.x);
+    pos.z = THREE.MathUtils.clamp(pos.z, box.min.z, box.max.z);
+    const eye = metric ? 1.6 : box.min.y + size.y * (1.6 / 3);
+    this.walk.setEyeHeight(THREE.MathUtils.clamp(eye, box.min.y + 0.05 * size.y, box.max.y - 0.05 * size.y));
+    this.walk.setPose(pos, pos.clone().add(dir));
+  }
 
   /**
    * Raycast the collider through a point given in client (page) pixels.
