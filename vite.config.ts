@@ -25,5 +25,5 @@ export default defineConfig({
   server: { port: 5185, strictPort: true },
   preview: { port: 5185, strictPort: true },
   plugins: [serveScenes],
-  test: { include: ["src/**/*.test.ts", "tests/*.test.ts", "tests/unit/**/*.test.ts"] },
+  test: { include: ["src/**/*.test.ts", "tests/*.test.ts", "tests/unit/**/*.test.ts", "tests/xr/**/*.test.ts"] },
 });

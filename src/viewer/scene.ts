@@ -43,6 +43,11 @@ export class Viewer {
   private readonly spark: SparkRenderer;
   private readonly displayCamera = new THREE.PerspectiveCamera(50, 1, 0.05, 200);
   private readonly rig = new ShotRig(HELPER_LAYER);
+  /** Holds the walk camera during a WebXR session. Locomotion moves this group, never the content. */
+  readonly xrRig = new THREE.Group();
+  /** Set by the XR session: called each frame before drawing, while presenting. */
+  xrTick: ((dtS: number) => void) | null = null;
+  private xrSaved: { position: THREE.Vector3; quaternion: THREE.Quaternion } | null = null;
   private running = true;
   private splat: SplatMesh | null = null;
   private collider: THREE.Mesh | null = null;
@@ -63,6 +68,7 @@ export class Viewer {
     this.scene.add(this.spark);
     this.scene.add(this.content);
     this.scene.add(this.rig.group);
+    this.scene.add(this.xrRig);
     this.rig.setLabel("1");
     this.shotCamera.rotation.order = "YXZ";
     this.shotCamera.position.set(0, 0.16, 0.8);
@@ -91,8 +97,45 @@ export class Viewer {
     const dt = this.last ? Math.min((t - this.last) / 1000, 0.1) : 0;
     this.last = t;
     if (!this.running) return;
+    if (this.renderer.xr.isPresenting) { // the headset drives the camera; look-through and walk keys do not apply
+      this.xrTick?.(dt);
+      this.syncRig();
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
     this.walk.update(dt);
     this.renderer.render(this.scene, this.activeCamera());
+  }
+
+  /**
+   * Before a WebXR session: put the walk camera under the rig, the rig on the floor under it and turned the way
+   * it looks, so the headset starts where the walk view was. `endXr` puts the camera back as it was.
+   */
+  beginXr(): void {
+    if (this.xrSaved) return;
+    const cam = this.camera;
+    this.xrSaved = { position: cam.position.clone(), quaternion: cam.quaternion.clone() };
+    const yaw = new THREE.Euler().setFromQuaternion(cam.quaternion, "YXZ").y;
+    this.xrRig.position.set(cam.position.x, 0, cam.position.z);
+    this.xrRig.rotation.set(0, yaw, 0);
+    this.xrRig.add(cam);
+  }
+
+  /** After a WebXR session: the walk camera back out of the rig with its own pose and projection, and the size refreshed. */
+  endXr(): void {
+    const saved = this.xrSaved;
+    if (!saved) return;
+    this.xrSaved = null;
+    this.xrRig.remove(this.camera);
+    this.xrRig.position.set(0, 0, 0);
+    this.xrRig.rotation.set(0, 0, 0);
+    this.camera.position.copy(saved.position);
+    this.camera.quaternion.copy(saved.quaternion);
+    this.camera.scale.set(1, 1, 1);
+    this.camera.near = 0.05; this.camera.far = 200;
+    this.camera.updateMatrixWorld(true);
+    this.resize();
+    this.last = 0;
   }
 
   /** Stop or start drawing frames. The animation loop stays installed. */

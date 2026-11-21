@@ -169,3 +169,27 @@ test("stage_lens_accurate_still_35mm_then_85mm_from_the_same_pose", async ({ pag
   expect(Math.abs(ratio / (85 / 35) - 1)).toBeLessThan(0.03);
   expect(b.filename).toBe("frame-85mm-16x9.jpg");
 });
+
+test("no_vr_button_without_headset_support", async ({ page }) => {
+  await page.goto("/#/stage");
+  await expect(page.getByRole("heading", { level: 1, name: "Stage" })).toBeVisible();
+  // the premise: this browser reports no immersive-vr support (WebKit has no navigator.xr at all)
+  const supported = await page.evaluate(async () => (navigator as unknown as { xr?: { isSessionSupported(m: string): Promise<boolean> } }).xr?.isSessionSupported("immersive-vr") ?? false);
+  expect(supported).toBe(false);
+  await page.waitForTimeout(500); // the page asks once at load; give its answer time to land
+  await expect(page.getByRole("button", { name: /Enter VR/ })).toHaveCount(0);
+  await expect(page.getByText(/Enter VR/)).toHaveCount(0);
+  await expect(page.locator("#enter-vr")).toHaveCount(0);
+});
+
+test("vr_button_shows_disabled_with_the_scale_line_when_the_browser_reports_support", async ({ page }) => {
+  // a stand-in for a headset browser: only the support answer, no session can start
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "xr", { configurable: true, value: { isSessionSupported: async () => true } });
+  });
+  await page.goto("/#/stage");
+  const btn = page.getByRole("button", { name: "Enter VR" });
+  await expect(btn).toBeVisible();
+  await expect(btn).toBeDisabled();
+  await expect(page.locator("#xr-note")).toHaveText("Confirm the scale before entering VR. The set is shown at real size.");
+});

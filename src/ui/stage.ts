@@ -13,6 +13,7 @@ import { SIZE_LABELS, type Shot, type SizeLabel } from "../model/types";
 import { createStandInSet } from "../model/standIns";
 import { createStandInsPanel } from "./standIns";
 import { createMovesPanel } from "./moves";
+import { createXrButton } from "./xrButton";
 import { el, labelled } from "./dom";
 
 export const FRAME_GRAB_WIDTH_PX = 1920;
@@ -40,10 +41,12 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   const through = el("input", { type: "checkbox", id: "through", checked: true });
   const maskText = el("span", { className: "meta", id: "mask-text" });
   const walkHint = el("span", { className: "meta spacer", id: "vp-hint" });
+  const xrButton = createXrButton(viewer, () => heightPresetsState(store.get()).enabled, () => { /* shots placed from the headset: task 26 */ });
   const bar = el("div", { className: "stage-bar" },
     el("h1", {}, "Stage"),
     el("label", { className: "switch" }, through, " Look through shot camera"),
     maskText,
+    xrButton.root,
     walkHint,
   );
 
@@ -186,6 +189,8 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   through.addEventListener("change", paintMode);
   shot.subscribe(paint);
   store.subscribe(clearNote);
+  store.subscribe(() => { void xrButton.refresh(); });
+  void xrButton.refresh();
   store.subscribe(movesPanel.stop); // a scale change moves the shot camera: end a preview first
   store.subscribe(movesPanel.refresh);
   store.subscribe(standInsPanel.refresh);

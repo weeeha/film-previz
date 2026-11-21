@@ -509,3 +509,6 @@ button.thumb:hover img { outline: 2px solid var(--line-strong); outline-offset: 
 #move-buttons .btn { flex: 1 1 0; }
 #move-buttons .btn[aria-pressed="true"] { border-color: var(--text); }
 .insp[inert] { opacity: 0.55; }
+
+/* Enter VR sits in the Stage bar and exists only when the browser reports immersive-vr support */
+.xr-slot { display: inline-flex; align-items: center; gap: var(--s2); }

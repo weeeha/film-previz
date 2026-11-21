@@ -34,4 +34,10 @@ Open question, not acted on: whether any video tool the owner uses accepts the e
 
 ## Quest phase
 
-(added as tasks land)
+- **Spark's own `SparkXr` helper is not used; the session is started on the page's renderer through three's `renderer.xr`.** Reason: the app needs its own thumbstick rules, its own button in the Stage bar and a clean handover back to the normal loop, and Spark already skips its pre-render update while `renderer.xr.isPresenting`.
+- **The walk camera moves under a rig group for the length of a session and is restored when it ends.** Reason: three's XR manager rewrites the camera's own transform and projection every frame, so the walk pose and projection must be saved and put back.
+- **A snap turn keeps the head where it is.** Reason: turning the rig about its own origin would swing the view sideways by the head's offset from the rig.
+- **The move stick also strafes (left and right along the head's side).** Reason: the brief fixes only forward movement, and a stick has two axes; strafing is the usual default and costs nothing.
+- **Shots placed in VR carry no reference photo and only a name ("From headset N").** Reason: the job, notes and reference belong to the shot being edited on the Stage, not to a pose placed from the headset.
+
+(more lines are added as tasks land)
