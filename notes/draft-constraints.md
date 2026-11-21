@@ -90,3 +90,37 @@ Run the render tier (overflow, focus style, contrast, text size, heading order) 
 ## Limits of the draft
 
 Static HTML and one CSS file. No build step, no network, no images; the viewport is drawn with CSS and inline SVG. A few lines of script switch the `?state=` view, the frame mask and the lens readout. Controls are not wired to anything else. The draft is for review and approval before any application code.
+
+## Audit findings (task 8)
+
+Every item of the fix list, checked in Chromium and WebKit at 1440 x 900, light and dark, and at 900 and 880 px for the default states.
+
+| Item | What | Result |
+|---|---|---|
+| 1 | Drawing follows the lens | Fixed. The room, door, chair, stand-ins and reference outline scale about the viewport centre by (f / 35) x (36 / sensor width), relative to the frame width. Door width at 85 mm is 2.4286 times its width at 35 mm in both engines; 14, 135, Super 35, 2.39:1, 1:1 and 3:2 agree with the readout. The room art is extended past its old edges so wide lenses show no blank area. |
+| 2 | Shot details first | Fixed. Order is Shot details, Lens, Camera. |
+| 3 | X and Z only | Fixed, with the hint about height. |
+| 4 | Strip in noscale | Fixed. Model units and the word "unverified". |
+| 5 | Missing states | Fixed. Scenes nowebgl and toolarge, collider line in loading, Shots exported and deleted (Undo, rows renumbered), all in the state switcher. |
+| 6 | Scale chip | Fixed. "Scale confirmed, door 2.00 m". |
+| 7 | Scene name in header | Fixed on all three views. In the Scenes loading state the saved name is shown, a first-time file would have none. |
+| 8 | Thumbnail aspect | Fixed. 3:2, 2.39:1 and 1.85:1 rows letterbox inside a fixed cell. |
+| 9 | Four columns | Fixed. SHA-256 moved to the file row; three facts remain. |
+| 10 | Sentence beside h1 | Fixed, deleted. |
+| 11 | Name column offset | Fixed. Text x matches the header at rest, hover and focus. Left: names sit 1 px (Chromium) to 1.8 px (WebKit) off the neighbouring cells because of line-box rounding. |
+| 12 | Clamp, count, sticky header | Fixed. Two-line clamp with full text in the title, "40 shots" under the table, header stays while the table scrolls. A focused name unclamps so it can be edited, which grows that row. |
+| 13 | Mask chips | Fixed. Plain text that follows the Aspect select. |
+| 14 | Collapsible sections | Fixed. Stand-ins and Reference photo are details, closed when empty. |
+| 15 | Filled control follows mode | Fixed. "Update shot 2" filled with "Save as new shot" outlined; "Save shot" filled in noshots. |
+| 16 | Empty strip | Fixed. Dashed box, one line. |
+| 17 | Hint at 900 to 1099 | Fixed. It wraps under the bar. |
+| 18 | Scene name field | Fixed. Two-row textarea. |
+| 19 to 22 | Copy and titles | Fixed. The floor plan note moved to the draft-only bar. |
+| 23 | film-craft columns | Left as ruled. |
+| 24 | Inspector scroll by keyboard | Fixed. tabindex, role and label; PageDown scrolls it in both engines. |
+| 25 | Selected chip mark | Fixed. 2 px ring. |
+| 26 | Reference line | Fixed. Dark casing with a white dash. |
+| 27 | Row buttons | Fixed. 32 px. |
+| 28 | Click on 85 | Page is correct. A real pointer click selects 85 and reads "85 mm on 36 mm: 23.91 degrees horizontal, 13.59 vertical". The earlier click on 14 came from clicking the hidden radio input through its accessibility ref, which sits over the first chip. |
+
+Unslop audit: render tier clean in light and dark at 1280 px on 6 screens (one warning: 180 controls on the long Shots state, only 80 driven). The rule list reports one LAY-4 hit on the three-column facts row, which is data, not cards.

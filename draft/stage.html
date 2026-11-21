@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Stage - film-previz draft</title>
+<title>Stage, film-previz draft</title>
 <link rel="stylesheet" href="draft.css">
 </head>
 <body>
@@ -11,11 +11,11 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <g id="room-art">
-      <rect class="r-bg" width="1600" height="900"/>
-      <polygon class="r-ceil" points="0,0 1600,0 1080,290 520,290"/>
-      <polygon class="r-floor" points="0,900 1600,900 1080,570 520,570"/>
-      <polygon class="r-side" points="0,0 520,290 520,570 0,900"/>
-      <polygon class="r-side" points="1600,0 1080,290 1080,570 1600,900"/>
+      <rect class="r-bg" x="-3000" y="-2000" width="7600" height="4900"/>
+      <polygon class="r-ceil" points="-3000,-1674 4600,-1674 1080,290 520,290"/>
+      <polygon class="r-floor" points="-3000,2804 4600,2804 1080,570 520,570"/>
+      <polygon class="r-side" points="-3000,-1674 520,290 520,570 -3000,2804"/>
+      <polygon class="r-side" points="4600,-1674 1080,290 1080,570 4600,2804"/>
       <rect class="r-wall" x="520" y="290" width="560" height="280"/>
       <rect class="r-door" x="851" y="383" width="84" height="187"/>
       <rect class="r-obj" x="628" y="528" width="56" height="42"/>
@@ -41,7 +41,7 @@
   <div class="scene-chip">
     <span class="name" title="Test room, 2 m set" data-hide="long">Test room, 2 m set</span>
     <span class="name" title="Warehouse loading dock, north wall visible, second pass with the shutters closed" data-show="long">Warehouse loading dock, north wall visible, second pass with the shutters closed</span>
-    <span class="badge ok" data-hide="noscale">Scale confirmed, manual</span>
+    <span class="badge ok" data-hide="noscale">Scale confirmed, door 2.00 m</span>
     <span class="badge warn" data-show="noscale">Scale not confirmed</span>
   </div>
 </header>
@@ -53,17 +53,14 @@
     <div class="stage-bar">
       <h1>Stage</h1>
       <label class="switch"><input type="checkbox" id="through" checked> Look through shot camera</label>
-      <div class="chips c2" role="radiogroup" aria-label="Frame mask">
-        <input type="radio" name="mask" id="m169" value="1.777777778" checked><label for="m169">16:9</label>
-        <input type="radio" name="mask" id="m239" value="2.39"><label for="m239">2.39:1</label>
-      </div>
-      <span class="hint">Frame mask</span>
+      <span class="meta" id="mask-text">Frame mask 16:9</span>
       <span class="meta spacer">Drag to look. W A S D to move.</span>
     </div>
 
     <div class="viewport" id="vp" aria-label="Viewport, drawn for the draft">
       <svg class="room" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-        <use href="#room-art"/>
+        <g id="scene-g">
+        <use href="#room-art" id="room-use"/>
         <g data-hide="nostandins">
           <!-- stand-in A: 1.75 m, 4.0 m from the camera -->
           <ellipse class="r-fig-line" cx="755" cy="772" rx="52" ry="10"/>
@@ -74,8 +71,11 @@
           <rect class="r-fig" x="980" y="482" width="40" height="170" rx="20"/>
         </g>
         <g class="ref-lines" data-hide="noref">
+          <rect class="r-ref-case" x="858" y="392" width="84" height="187"/>
+          <line class="r-ref-case" x1="-3000" y1="432" x2="4600" y2="432"/>
           <rect class="r-ref" x="858" y="392" width="84" height="187"/>
-          <line class="r-ref" x1="0" y1="432" x2="1600" y2="432"/>
+          <line class="r-ref" x1="-3000" y1="432" x2="4600" y2="432"/>
+        </g>
         </g>
       </svg>
       <div class="frame" id="frame">
@@ -85,88 +85,68 @@
           </div>
 
     <div class="strip" aria-label="Shots on this scene">
-      <p class="empty" data-show="noshots">No shots yet. Set the camera and lens, then save the first shot.</p>
+      <p class="empty-state" data-show="noshots">No shots yet. Set the camera and lens, then save the first shot.</p>
       <a class="shot" href="shots.html" data-hide="noshots">
         <span class="t"><svg viewBox="500 250 600 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
-        <b>1 Entrance</b><span>35 mm, eye 1.6 m</span>
+        <b>1 Entrance</b><span><span data-hide="noscale">35 mm, eye 1.6 m</span><span data-show="noscale">35 mm, 0.64 units, unverified</span></span>
       </a>
       <a class="shot" href="shots.html" aria-current="true" data-hide="noshots">
         <span class="t"><svg viewBox="560 330 440 250" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
-        <b>2 Cross to chair</b><span>50 mm, eye 1.6 m</span><span><strong>Editing</strong></span>
+        <b>2 Cross to chair</b><span><span data-hide="noscale">50 mm, eye 1.6 m</span><span data-show="noscale">50 mm, 0.64 units, unverified</span></span><span><strong>Editing</strong></span>
       </a>
       <a class="shot" href="shots.html" data-hide="noshots">
-        <span class="t"><svg viewBox="560 420 260 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
-        <b>3 At the chair</b><span>85 mm, hip 1.0 m</span>
+        <span class="t" style="--ar:1.5"><svg viewBox="560 420 260 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>3 At the chair</b><span><span data-hide="noscale">85 mm, hip 1.0 m</span><span data-show="noscale">85 mm, 0.40 units, unverified</span></span>
       </a>
       <a class="shot" href="shots.html" data-hide="noshots">
-        <span class="t"><svg viewBox="200 300 1200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
-        <b>4 Chair, low</b><span>24 mm, low 0.3 m</span>
+        <span class="t" style="--ar:2.39"><svg viewBox="200 300 1200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>4 Chair, low</b><span><span data-hide="noscale">24 mm, low 0.3 m</span><span data-show="noscale">24 mm, 0.12 units, unverified</span></span>
       </a>
       <a class="shot" href="shots.html" data-hide="noshots">
-        <span class="t"><svg viewBox="0 120 1100 620" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
-        <b>5 Door, inside</b><span>28 mm, eye 1.6 m</span>
+        <span class="t" style="--ar:1.85"><svg viewBox="0 120 1100 620" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>5 Door, inside</b><span><span data-hide="noscale">28 mm, eye 1.6 m</span><span data-show="noscale">28 mm, 0.64 units, unverified</span></span>
       </a>
       <a class="shot" href="shots.html" data-show="long">
         <span class="t"><svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
-        <b>6 High corner</b><span>18 mm, high 2.5 m</span>
+        <b>6 High corner</b><span><span data-hide="noscale">18 mm, high 2.5 m</span><span data-show="noscale">18 mm, 1.00 units, unverified</span></span>
       </a>
       <a class="shot" href="shots.html" data-show="long" title="7 Entrance, wide, alternate with the shutters closed and the light from the left">
         <span class="t"><svg viewBox="300 200 1000 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
-        <b>7 Entrance, wide, alternate with the shutters closed and the light from the left</b><span>35 mm, eye 1.6 m</span>
+        <b>7 Entrance, wide, alternate with the shutters closed and the light from the left</b><span><span data-hide="noscale">35 mm, eye 1.6 m</span><span data-show="noscale">35 mm, 0.64 units, unverified</span></span>
       </a>
     </div>
   </div>
 
   <aside class="inspector" aria-label="Inspector">
-    <div class="inspector-scroll">
+    <div class="inspector-scroll" tabindex="0" role="region" aria-label="Shot, lens and camera settings">
 
-      <section class="insp" id="camera" aria-labelledby="h-camera">
-        <h2 id="h-camera">Camera</h2>
-        <div class="notice warn" data-show="noscale" role="status">
-          <p><strong>Scale not confirmed.</strong> Heights are in model units, so the presets are off.</p>
-          <p><a href="index.html#scale">Set scale</a> to turn them on.</p>
-        </div>
-        <div>
-          <span class="group-label" id="lbl-height">Height preset</span>
-          <div class="chips c4" role="radiogroup" aria-labelledby="lbl-height">
-            <input type="radio" name="hp" id="hp-low" data-off="noscale"><label for="hp-low">Low<small>0.3 m</small></label>
-            <input type="radio" name="hp" id="hp-hip" data-off="noscale"><label for="hp-hip">Hip<small>1.0 m</small></label>
-            <input type="radio" name="hp" id="hp-eye" data-off="noscale" checked><label for="hp-eye">Eye<small>1.6 m</small></label>
-            <input type="radio" name="hp" id="hp-high" data-off="noscale"><label for="hp-high">High<small>2.5 m</small></label>
-          </div>
-          <p class="hint" style="margin-top:var(--s2)">Presets are assumptions. Eye height changes from person to person. <button class="btn btn-plain" type="button" style="min-height:24px;padding:0 var(--s1)">Edit presets</button></p>
-        </div>
+      <section class="insp" id="save" aria-labelledby="h-shot">
+        <h2 id="h-shot">Shot details</h2>
         <div class="fields two">
-          <label class="field" data-hide="noscale">Height above ground, m
-            <input type="number" value="1.60" step="0.01">
+          <label class="field">Name
+            <input type="text" value="Cross to chair" data-hide="noshots long">
+            <input type="text" placeholder="Shot name" data-show="noshots">
+            <input type="text" value="Entrance, wide, alternate with the shutters closed and the light from the left" data-show="long">
           </label>
-          <label class="field" data-show="noscale">Height, model units
-            <input type="number" value="0.64" step="0.01">
-          </label>
-          <label class="field">Heading, degrees
-            <input type="number" value="215" step="1">
-          </label>
-          <label class="field">Pitch, degrees
-            <input type="number" value="-2.0" step="0.5">
-          </label>
-          <label class="field">Roll, degrees
-            <input type="number" value="0.0" step="0.5">
+          <label class="field">Size
+            <select>
+              <option>Not set</option><option>ECU</option><option>CU</option><option>MCU</option>
+              <option selected>MS</option><option>MWS</option><option>WS</option><option>EWS</option>
+            </select>
           </label>
         </div>
-        <div class="fields three">
-          <label class="field">X
-            <input type="number" value="1.20" step="0.05">
-          </label>
-          <label class="field">Y
-            <input type="number" value="1.60" step="0.05" data-hide="noscale">
-            <input type="number" value="0.64" step="0.05" data-show="noscale">
-          </label>
-          <label class="field">Z
-            <input type="number" value="3.10" step="0.05">
-          </label>
-        </div>
-        <p class="hint" data-hide="noscale">Position in metres from the scene origin.</p>
-        <p class="hint" data-show="noscale">Position in model units. Distances become metres after the scale is confirmed.</p>
+        <label class="field">Job
+          <input type="text" value="Follow the crossing" data-hide="noshots">
+          <input type="text" placeholder="What this shot must do" data-show="noshots">
+        </label>
+        <label class="field">Decisive action
+          <input type="text" value="She crosses the room to the chair" data-hide="noshots">
+          <input type="text" placeholder="What happens in the frame" data-show="noshots">
+        </label>
+        <label class="field">Notes
+          <textarea rows="3" data-hide="noshots">Door stays on the right third.</textarea>
+          <textarea rows="3" data-show="noshots"></textarea>
+        </label>
       </section>
 
       <section class="insp" id="lens" aria-labelledby="h-lens">
@@ -219,76 +199,96 @@
         </div>
       </section>
 
-      <section class="insp" id="save" aria-labelledby="h-shot">
-        <h2 id="h-shot">Shot details</h2>
+      <section class="insp" id="camera" aria-labelledby="h-camera">
+        <h2 id="h-camera">Camera</h2>
+        <div class="notice warn" data-show="noscale" role="status">
+          <p><strong>Scale not confirmed.</strong> Heights are in model units, so the presets are off.</p>
+          <p><a href="index.html#scale">Set scale</a> to turn them on.</p>
+        </div>
+        <div>
+          <span class="group-label" id="lbl-height">Height preset</span>
+          <div class="chips c4" role="radiogroup" aria-labelledby="lbl-height">
+            <input type="radio" name="hp" id="hp-low" data-off="noscale"><label for="hp-low">Low<small>0.3 m</small></label>
+            <input type="radio" name="hp" id="hp-hip" data-off="noscale"><label for="hp-hip">Hip<small>1.0 m</small></label>
+            <input type="radio" name="hp" id="hp-eye" data-off="noscale" checked><label for="hp-eye">Eye<small>1.6 m</small></label>
+            <input type="radio" name="hp" id="hp-high" data-off="noscale"><label for="hp-high">High<small>2.5 m</small></label>
+          </div>
+          <p class="hint" style="margin-top:var(--s2)">Presets are assumptions. Eye height changes from person to person. <button class="btn btn-plain" type="button" style="min-height:24px;padding:0 var(--s1)">Edit presets</button></p>
+        </div>
         <div class="fields two">
-          <label class="field">Name
-            <input type="text" value="Cross to chair" data-hide="noshots long">
-            <input type="text" placeholder="Shot name" data-show="noshots">
-            <input type="text" value="Entrance, wide, alternate with the shutters closed and the light from the left" data-show="long">
+          <label class="field" data-hide="noscale">Height above ground, m
+            <input type="number" value="1.60" step="0.01">
           </label>
-          <label class="field">Size
-            <select>
-              <option>Not set</option><option>ECU</option><option>CU</option><option>MCU</option>
-              <option selected>MS</option><option>MWS</option><option>WS</option><option>EWS</option>
-            </select>
+          <label class="field" data-show="noscale">Height, model units
+            <input type="number" value="0.64" step="0.01">
+          </label>
+          <label class="field">Heading, degrees
+            <input type="number" value="215" step="1">
+          </label>
+          <label class="field">Pitch, degrees
+            <input type="number" value="-2.0" step="0.5">
+          </label>
+          <label class="field">Roll, degrees
+            <input type="number" value="0.0" step="0.5">
           </label>
         </div>
-        <label class="field">Job
-          <input type="text" value="Follow the crossing" data-hide="noshots">
-          <input type="text" placeholder="What this shot must do" data-show="noshots">
-        </label>
-        <label class="field">Decisive action
-          <input type="text" value="She crosses the room to the chair" data-hide="noshots">
-          <input type="text" placeholder="What happens in the frame" data-show="noshots">
-        </label>
-        <label class="field">Notes
-          <textarea rows="3" data-hide="noshots">Door stays on the right third.</textarea>
-          <textarea rows="3" data-show="noshots"></textarea>
-        </label>
+        <div class="fields two">
+          <label class="field">X
+            <input type="number" value="1.20" step="0.05">
+          </label>
+          <label class="field">Z
+            <input type="number" value="3.10" step="0.05">
+          </label>
+        </div>
+        <p class="hint" data-hide="noscale">X and Z are metres from the scene origin. Height is the vertical position, measured from the floor once scale is confirmed.</p>
+        <p class="hint" data-show="noscale">X and Z are model units from the scene origin. Height is the vertical position, measured from the floor once scale is confirmed.</p>
       </section>
 
-      <section class="insp" id="standins" aria-labelledby="h-stand">
-        <h2 id="h-stand">Stand-ins</h2>
-        <div data-hide="nostandins" class="rows" id="standin-list">
-          <div class="standin">
-            <b>Person A</b><span class="r pct" data-h="1.75" data-d="4.0">75.6% of frame height</span>
-            <span class="hint">1.75 m tall, 4.0 m away</span><span class="hint r pct-head" data-h="0.23" data-d="4.0" style="text-align:right">Head 9.9%</span>
+      <details class="insp" id="standins" open data-closed="nostandins">
+        <summary><h2 id="h-stand">Stand-ins</h2><span class="hint" data-hide="nostandins">2 on this scene</span><span class="hint" data-show="nostandins">None yet</span></summary>
+        <div class="insp-body">
+          <div data-hide="nostandins" class="rows" id="standin-list">
+            <div class="standin">
+              <b>Person A</b><span class="r pct" data-h="1.75" data-d="4.0">75.6% of frame height</span>
+              <span class="hint">1.75 m tall, 4.0 m away</span><span class="hint r pct-head" data-h="0.23" data-d="4.0" style="text-align:right">Head 9.9%</span>
+            </div>
+            <div class="standin">
+              <b>Person B</b><span class="r pct" data-h="1.62" data-d="5.5">50.9% of frame height</span>
+              <span class="hint">1.62 m tall, 5.5 m away</span><span class="hint r pct-head" data-h="0.23" data-d="5.5" style="text-align:right">Head 7.2%</span>
+            </div>
+            <p class="hint">Head height of 0.23 m is an assumption. Use these readouts to check face size against the shot size.</p>
           </div>
-          <div class="standin">
-            <b>Person B</b><span class="r pct" data-h="1.62" data-d="5.5">50.9% of frame height</span>
-            <span class="hint">1.62 m tall, 5.5 m away</span><span class="hint r pct-head" data-h="0.23" data-d="5.5" style="text-align:right">Head 7.2%</span>
+          <div data-show="nostandins" class="rows">
+            <p class="meta">No stand-ins on this scene. Add one to check how large a person is in the frame.</p>
           </div>
-          <p class="hint">Head height of 0.23 m is an assumption. Use these readouts to check face size against the shot size.</p>
+          <button class="btn" type="button" style="justify-self:start">Add stand-in</button>
         </div>
-        <div data-show="nostandins" class="rows">
-          <p class="meta">No stand-ins on this scene. Add one to check how large a person is in the frame.</p>
-        </div>
-        <button class="btn" type="button" style="justify-self:start">Add stand-in</button>
-      </section>
+      </details>
 
-      <section class="insp" id="reference" aria-labelledby="h-ref">
-        <h2 id="h-ref">Reference photo</h2>
-        <div data-hide="noref" class="rows">
-          <p class="mono" style="overflow-wrap:anywhere">ref-room-01.jpg</p>
-          <p class="meta">Role: camera position and geometry, not identity. The photo stays on this computer.</p>
-          <label class="switch"><input type="checkbox" id="overlay" checked> Show overlay at 50 percent</label>
-          <p class="hint">Press X to swap between the frame and the photo.</p>
+      <details class="insp" id="reference" open data-closed="noref">
+        <summary><h2 id="h-ref">Reference photo</h2><span class="hint" data-hide="noref">ref-room-01.jpg</span><span class="hint" data-show="noref">None yet</span></summary>
+        <div class="insp-body">
+          <div data-hide="noref" class="rows">
+            <p class="mono" style="overflow-wrap:anywhere">ref-room-01.jpg</p>
+            <p class="meta">Used for camera position and geometry only. The photo stays on this computer.</p>
+            <label class="switch"><input type="checkbox" id="overlay" checked> Show overlay at 50 percent</label>
+            <p class="hint">Press X to swap between the frame and the photo.</p>
+          </div>
+          <div data-show="noref" class="rows">
+            <p class="meta">No reference photo. Add one to compare it with the frame, side by side or as an overlay. The photo stays on this computer.</p>
+          </div>
+          <button class="btn" type="button" style="justify-self:start"><span data-hide="noref">Replace photo</span><span data-show="noref">Add reference photo</span></button>
         </div>
-        <div data-show="noref" class="rows">
-          <p class="meta">No reference photo. Add one to compare it with the frame, side by side or as an overlay. The photo stays on this computer.</p>
-        </div>
-        <button class="btn" type="button" style="justify-self:start"><span data-hide="noref">Replace photo</span><span data-show="noref">Add reference photo</span></button>
-      </section>
+      </details>
 
     </div>
 
     <div class="insp-foot">
       <p class="hint" data-show="noscale">This shot will save with heights unverified.</p>
       <div class="row">
-        <button class="btn btn-primary" type="button">Save shot</button>
-        <button class="btn" type="button" data-hide="noshots">Update shot 2</button>
-        <button class="btn" type="button" data-show="noshots" disabled>Update shot</button>
+        <button class="btn btn-primary" type="button" data-hide="noshots">Update shot 2</button>
+        <button class="btn" type="button" data-hide="noshots">Save as new shot</button>
+        <button class="btn btn-primary" type="button" data-show="noshots">Save shot</button>
       </div>
     </div>
   </aside>
@@ -336,6 +336,7 @@
   document.querySelectorAll('[data-show]').forEach(function (e) { e.toggleAttribute('hidden', e.dataset.show.split(' ').indexOf(s) < 0); });
   document.querySelectorAll('[data-hide]').forEach(function (e) { if (e.dataset.hide.split(' ').indexOf(s) >= 0) e.setAttribute('hidden', ''); });
   document.querySelectorAll('[data-off]').forEach(function (e) { if (e.dataset.off.split(' ').indexOf(s) >= 0) { e.disabled = true; e.checked = false; } });
+  document.querySelectorAll('details[data-closed]').forEach(function (e) { if (e.dataset.closed.split(' ').indexOf(s) >= 0) e.removeAttribute('open'); });
   document.querySelectorAll('.states a').forEach(function (a) {
     if ((new URL(a.href).searchParams.get('state') || 'default') === s) a.setAttribute('aria-current', 'true');
   });
@@ -344,6 +345,19 @@
   var $ = function (id) { return document.getElementById(id); };
   var vp = $('vp'), sensor = $('sensor'), aspect = $('aspect'), free = $('f-free'), cw = $('cw');
   function num(x) { return String(+x.toFixed(2)); }
+  /* the drawing follows the lens: a pinhole camera scales the image about its centre by
+     (f / 35) x (36 / sensor width). At 35 mm on 36 mm the 1600 unit wide room spans the frame
+     width, so the picture and the readout agree at every aspect. Not applied while walking. */
+  var sceneG = $('scene-g'), lastF = 35, lastW = 36;
+  function scaleScene(f, w) {
+    if (f && w) { lastF = f; lastW = w; }
+    var cw = vp.clientWidth, ch = vp.clientHeight;
+    var slice = Math.max(cw / 1600, ch / 900);
+    var k = 1;
+    if (!vp.classList.contains('walk') && slice > 0) k = $('frame').offsetWidth * (lastF * 36) / (35 * lastW) / (1600 * slice);
+    sceneG.setAttribute('transform', 'translate(800 450) scale(' + k.toFixed(4) + ') translate(-800 -450)');
+    sceneG.dataset.k = k.toFixed(4);
+  }
   function update() {
     var checked = document.querySelector('input[name=fl]:checked');
     var f = checked ? +checked.value : +free.value;
@@ -356,6 +370,8 @@
     $('readout').textContent = num(f) + ' mm on ' + num(w) + ' mm: ' + h.toFixed(2) + ' degrees horizontal, ' + v.toFixed(2) + ' vertical';
     $('frame-size').textContent = 'Frame on the sensor: ' + num(w) + ' x ' + num(w / a) + ' mm';
     vp.style.setProperty('--ar', a);
+    $('mask-text').textContent = 'Frame mask ' + aspect.options[aspect.selectedIndex].text;
+    scaleScene(f, w);
     $('frame-tag').textContent = aspect.options[aspect.selectedIndex].text + ', ' + num(f) + ' mm';
     var fh = function (d) { return d * (w / a) / f; };
     document.querySelectorAll('.pct').forEach(function (e) { e.textContent = (e.dataset.h / fh(e.dataset.d) * 100).toFixed(1) + '% of frame height'; });
@@ -368,17 +384,14 @@
   });
   sensor.addEventListener('change', update);
   cw.addEventListener('input', update);
-  aspect.addEventListener('change', function () {
-    document.querySelectorAll('input[name=mask]').forEach(function (r) { r.checked = (+r.value === +aspect.value); });
-    update();
-  });
-  document.querySelectorAll('input[name=mask]').forEach(function (r) {
-    r.addEventListener('change', function () { aspect.value = r.value; update(); });
-  });
-  $('through').addEventListener('change', function () { vp.classList.toggle('walk', !this.checked); });
+  aspect.addEventListener('change', update);
+  $('through').addEventListener('change', function () { vp.classList.toggle('walk', !this.checked); update(); });
+  window.addEventListener('resize', function () { scaleScene(); });
+  if (window.ResizeObserver) new ResizeObserver(function () { scaleScene(); }).observe(vp);
   var ov = $('overlay');
   function syncOverlay() { vp.classList.toggle('ref-on', !!ov && ov.checked); }
   if (ov) { ov.addEventListener('change', syncOverlay); syncOverlay(); }
+  update();
 })();
 </script>
 </body>
