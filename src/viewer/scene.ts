@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { SparkRenderer, SplatMesh, SplatFileType } from "@sparkjsdev/spark";
 import { WalkControls } from "./walk";
+import { applyScale } from "../scale/scale";
 
 /** Helpers and overlays (collider wireframe, markers) go on this layer. Hide it for frame grabs. */
 export const HELPER_LAYER = 1;
@@ -106,6 +107,49 @@ export class Viewer {
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  get hasCollider(): boolean { return this.collider !== null; }
+
+  /**
+   * Raycast the collider through a point given in client (page) pixels.
+   * Returns the hit in content-local coordinates (raw units, before scale and shift), or null on a miss or no collider.
+   */
+  pickCollider(clientX: number, clientY: number): THREE.Vector3 | null {
+    if (!this.collider) return null;
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
+    const ray = new THREE.Raycaster();
+    ray.layers.enable(HELPER_LAYER); // the collider lives on the helper layer
+    this.scene.updateMatrixWorld(true);
+    this.camera.updateMatrixWorld(true); // the camera is not in the scene, and the loop may be paused
+    ray.setFromCamera(ndc, this.camera);
+    const hit = ray.intersectObject(this.collider, false)[0];
+    return hit ? this.content.worldToLocal(hit.point.clone()) : null;
+  }
+
+  /** Client (page) pixel position of a content-local point. Used by the tests to aim real clicks. */
+  localToClient(p: [number, number, number]): { x: number; y: number } {
+    this.scene.updateMatrixWorld(true);
+    this.camera.updateMatrixWorld(true);
+    const v = this.content.localToWorld(new THREE.Vector3(...p)).project(this.camera);
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    return { x: rect.left + ((v.x + 1) / 2) * rect.width, y: rect.top + ((1 - v.y) / 2) * rect.height };
+  }
+
+  /**
+   * Scale and shift the content (splat and collider) and move the walk camera with it,
+   * so the view stays where it was. `metric` says whether the units are now metres.
+   */
+  setScale(factor: number, groundOffsetM: number, metric: boolean): void {
+    const oldS = this.content.scale.x, oldP = this.content.position.clone();
+    const cam = this.camera.position;
+    const lx = (cam.x - oldP.x) / oldS, lz = (cam.z - oldP.z) / oldS;
+    applyScale(this.content, factor, groundOffsetM);
+    cam.x = lx * factor + this.content.position.x;
+    cam.z = lz * factor + this.content.position.z;
+    this.walk.speed = this.walk.speed / oldS * factor;
+    this.walk.setEyeHeight(metric ? 1.6 : 0.16);
   }
 
   setColliderVisible(on: boolean): void {

@@ -1,6 +1,8 @@
 import "./styles.css";
 import { startRouter, type Route } from "./router";
 import { Viewer } from "./viewer/scene";
+import { createScalePanel } from "./ui/scalePanel";
+import { sha256Hex } from "./scale/persist";
 
 const main = document.getElementById("main") as HTMLElement;
 const chip = document.getElementById("scene-chip") as HTMLElement;
@@ -48,15 +50,22 @@ function buildStage(): { root: HTMLElement; viewer: Viewer } {
   viewport.className = "viewport";
   viewport.id = "viewport";
 
-  const root = page("Stage", bar, status, viewport);
   const viewer = new Viewer(viewport);
+  const panel = createScalePanel(viewer);
+  const root = page("Stage", bar, status, viewport, panel.root);
+
+  /** Hash the file, restore its stored scale if there is one, then load it. */
+  const openSplat = async (f: File): Promise<number> => {
+    panel.setScene(await sha256Hex(f));
+    return viewer.loadSplat(f);
+  };
 
   const fail = (err: unknown) => { status.textContent = "Failed: " + (err instanceof Error ? err.message : String(err)); console.error(err); };
   splatField.input.addEventListener("change", () => {
     const f = splatField.input.files?.[0];
     if (!f) return;
     status.textContent = "Loading " + f.name;
-    viewer.loadSplat(f).then((n) => {
+    openSplat(f).then((n) => {
       status.textContent = `${f.name}: ${n} splats`;
       status.dataset.splats = String(n);
       chip.textContent = f.name;
@@ -64,7 +73,7 @@ function buildStage(): { root: HTMLElement; viewer: Viewer } {
   });
   colliderField.input.addEventListener("change", () => {
     const f = colliderField.input.files?.[0];
-    if (f) viewer.loadCollider(f).then((n) => { status.dataset.colliderTriangles = String(n); }).catch(fail);
+    if (f) viewer.loadCollider(f).then((n) => { status.dataset.colliderTriangles = String(n); panel.refresh(); }).catch(fail);
   });
 
   if (import.meta.env.DEV) {
@@ -73,8 +82,8 @@ function buildStage(): { root: HTMLElement; viewer: Viewer } {
     const q = new URLSearchParams(location.search);
     const load = async (u: string) => new File([await (await fetch(u)).blob()], u.split("/").pop() ?? "file");
     const src = q.get("src"), col = q.get("collider");
-    if (src) load(src).then((f) => viewer.loadSplat(f)).then((n) => { status.textContent = `${src}: ${n} splats`; status.dataset.splats = String(n); }).catch(fail);
-    if (col) load(col).then((f) => viewer.loadCollider(f)).catch(fail);
+    if (src) load(src).then((f) => openSplat(f)).then((n) => { status.textContent = `${src}: ${n} splats`; status.dataset.splats = String(n); }).catch(fail);
+    if (col) load(col).then((f) => viewer.loadCollider(f)).then(() => panel.refresh()).catch(fail);
   }
   return { root, viewer };
 }
