@@ -22,7 +22,10 @@ The owner asked for the remaining tasks to be built with the recommended option 
 
 ## Phase 5 (camera moves)
 
-(added as tasks land)
+- **The end pose is set by one amount per kind and computed from the start pose; there is no "capture the end view" step.** Reason: one number is unambiguous, keyboard friendly and testable.
+- **A pan is limited to 179 degrees either way.** Reason: the preview turns the short way round, so a larger pan would play backwards.
+- **"Show end" is a toggle ("Show end", then "Show start") and holds the end pose until pressed again.** While a preview plays or the end is held, the Lens and Camera sections and the nudge keys ignore input, and saving a shot or a frame says "Stop the move preview before saving." Reason: a grab taken from the end pose would be saved as the start frame.
+- **A scale change ends a running preview.** Reason: the scale moves the shot camera and re-reads its pose, which would take a point mid-move as the start.
 
 ## Quest phase
 

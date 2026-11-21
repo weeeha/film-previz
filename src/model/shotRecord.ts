@@ -1,7 +1,7 @@
 // Building a Shot record from what the Stage holds, and the small derived values the strip and the Shots table show.
 import { lensFov } from "../camera/lens";
 import { ASPECTS, HEIGHT_PRESETS, type Sensor } from "../camera/sensors";
-import type { CameraPose, Shot, SizeLabel, StandIn } from "./types";
+import type { CameraPose, Move, Shot, SizeLabel, StandIn } from "./types";
 
 export type ShotDetails = { name: string; sizeLabel: SizeLabel | null; job: string; action: string; notes: string };
 
@@ -14,6 +14,8 @@ export type ShotCapture = {
   sceneId: string;
   lens: { focalMm: number; sensor: Sensor; aspect: number };
   pose: CameraPose;
+  /** The move as set on the Stage, its end pose already worked out. Copied into the record. */
+  move: Move;
   /** The stand-ins on the Stage now. Copied into the record. */
   standIns: StandIn[];
   scaleConfirmed: boolean;
@@ -26,7 +28,7 @@ export type ShotCapture = {
 };
 
 /**
- * A static shot, ready for `validateShot`. The height above ground is the pose's y: the scene content is shifted
+ * A shot record, ready for `validateShot`. The height above ground is the pose's y: the scene content is shifted
  * by the ground offset when the scale is applied, so the floor is y = 0 in the scene's own frame. Without a
  * confirmed scale that y is in model units and `scaleConfirmed` is false.
  */
@@ -51,7 +53,7 @@ export function buildShot(c: ShotCapture): Shot {
     pose: { positionM: [...c.pose.positionM], headingDeg: c.pose.headingDeg, pitchDeg: c.pose.pitchDeg, rollDeg: c.pose.rollDeg },
     heightAboveGroundM: c.pose.positionM[1],
     scaleConfirmed: c.scaleConfirmed,
-    move: { kind: "static", durationS: null, ease: null, endPose: null },
+    move: structuredClone(c.move),
     standIns: structuredClone(c.standIns),
     frame: { file: frameFileFor(c.id), widthPx: c.frame.widthPx, heightPx: c.frame.heightPx },
     referencePhoto: c.referencePhoto ? { ...c.referencePhoto } : null,

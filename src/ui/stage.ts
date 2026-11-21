@@ -12,6 +12,7 @@ import { buildShot, aspectIdFor, stripLine, shotTitle, type ShotDetails } from "
 import { SIZE_LABELS, type Shot, type SizeLabel } from "../model/types";
 import { createStandInSet } from "../model/standIns";
 import { createStandInsPanel } from "./standIns";
+import { createMovesPanel } from "./moves";
 import { el, labelled } from "./dom";
 
 export const FRAME_GRAB_WIDTH_PX = 1920;
@@ -86,10 +87,15 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   const standInsPanel = createStandInsPanel(viewer, shot, standInSet, () => heightPresetsState(store.get()).enabled, session);
   const standins = standInsPanel.root;
   if (import.meta.env.DEV) (window as unknown as { __standIns: typeof standInSet }).__standIns = standInSet;
+  const movesPanel = createMovesPanel(viewer, shot, () => heightPresetsState(store.get()).enabled, (busy) => {
+    // the lens and camera sections ignore input while the shot camera is off its start pose
+    lens.root.inert = busy; camera.root.inert = busy;
+    paintMode();
+  });
   const referencePanel = createReferencePanel(viewer);
   const reference = referencePanel.root;
 
-  const scroll = el("div", { className: "inspector-scroll" }, shotDetails, lens.root, camera.root, standins, reference);
+  const scroll = el("div", { className: "inspector-scroll" }, shotDetails, lens.root, camera.root, movesPanel.root, standins, reference);
   scroll.tabIndex = 0;
   scroll.setAttribute("role", "region");
   scroll.setAttribute("aria-label", "Shot, lens and camera settings");
@@ -123,7 +129,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
     through.disabled = !open;
     maskText.hidden = !open;
     root.dataset.scene = open ? "open" : "none";
-    viewer.lookThrough = active && open && through.checked;
+    viewer.lookThrough = active && open && (through.checked || movesPanel.isPreviewing());
     viewer.walk.enabled = !viewer.lookThrough;
     viewportEl?.classList.toggle("walk", !viewer.lookThrough);
     if (viewer.lookThrough) { if (!frame.isConnected) viewportEl?.appendChild(frame); } else frame.remove();
@@ -171,7 +177,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   let lastSceneId: string | null = null;
   function paintSession(): void {
     const id = session.scene()?.id ?? null;
-    if (id !== lastSceneId) { lastSceneId = id; standInSet.replace([]); } // stand-ins belong to a scene
+    if (id !== lastSceneId) { lastSceneId = id; standInSet.replace([]); movesPanel.reset(); } // stand-ins and the move belong to a scene
     paintStrip(); paintFoot(); paintMode();
   }
 
@@ -180,6 +186,8 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   through.addEventListener("change", paintMode);
   shot.subscribe(paint);
   store.subscribe(clearNote);
+  store.subscribe(movesPanel.stop); // a scale change moves the shot camera: end a preview first
+  store.subscribe(movesPanel.refresh);
   store.subscribe(standInsPanel.refresh);
   session.subscribe(paintSession);
   paint();
@@ -189,6 +197,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
     shot.setLens({ focalMm: rec.lens.focalLengthMm, sensor: { ...rec.lens.sensor }, aspectId: aspectIdFor(rec.lens.aspect) });
     shot.setPose({ positionM: [...rec.pose.positionM], headingDeg: rec.pose.headingDeg, pitchDeg: rec.pose.pitchDeg, rollDeg: rec.pose.rollDeg });
     standInSet.replace(rec.standIns);
+    movesPanel.setFromShot(rec);
     writeDetails({ name: rec.name, sizeLabel: rec.sizeLabel, job: rec.job, action: rec.action, notes: rec.notes });
     through.checked = true;
     session.setEditing(rec.id);
@@ -200,6 +209,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   async function saveShotRecord(mode: "new" | "update"): Promise<void> {
     const sc = session.scene();
     if (!sc) { say("Open a scene on Scenes to save shots."); return; }
+    if (movesPanel.isPreviewing()) { say("Stop the move preview before saving."); return; }
     const prev = mode === "update" ? editingShot() : null;
     for (const b of [primaryBtn, asNewBtn, saveBtn]) b.disabled = true;
     delete saveMsg.dataset.note;
@@ -214,6 +224,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
         sceneId: sc.id,
         lens: { focalMm: shot.lens.focalMm, sensor: shot.lens.sensor, aspect: shot.lens.aspect },
         pose: shot.pose,
+        move: movesPanel.move(),
         standIns: standInSet.list(),
         scaleConfirmed: heightPresetsState(store.get()).enabled,
         frame: { widthPx: g.widthPx, heightPx: g.heightPx },
@@ -241,6 +252,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
 
   // ----- Save frame: one JPEG, 1920 px wide in the shot's aspect -----
   saveBtn.addEventListener("click", async () => {
+    if (movesPanel.isPreviewing()) { say("Stop the move preview before saving."); return; }
     saveBtn.disabled = true;
     delete saveMsg.dataset.note;
     saveMsg.dataset.busy = "1";
@@ -267,7 +279,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
 
   // ----- nudge keys: with the viewport focused -----
   const onKey = (e: KeyboardEvent) => {
-    if (!active || isFormTarget(e.target) || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (!active || movesPanel.isPreviewing() || isFormTarget(e.target) || e.altKey || e.ctrlKey || e.metaKey) return;
     const k = e.shiftKey ? 5 : 1;
     const p = shot.pose;
     switch (e.code) {

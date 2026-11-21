@@ -10,6 +10,7 @@ const base = {
   id: "shot-001", number: 1, sceneId: sceneIdForHash(HASH_A),
   lens: { focalMm: 35, sensor: SENSORS[0]!, aspect: 16 / 9 },
   standIns: [] as StandIn[],
+  move: { kind: "static" as const, durationS: null, ease: null, endPose: null },
   pose: { positionM: [1, 1.6, 2] as [number, number, number], headingDeg: 20, pitchDeg: -3, rollDeg: 0 },
   scaleConfirmed: true, frame: { widthPx: 1920, heightPx: 1080 }, referencePhoto: null,
   details: { name: "Entrance", sizeLabel: "WS" as const, job: "Show the room", action: "She enters", notes: "" },
@@ -31,6 +32,16 @@ describe("buildShot", () => {
     expect(validateShot(s)).toEqual({ ok: true });
     expect(s.createdAt).toBe("2026-01-01T00:00:00.000Z");
     expect(s.scaleConfirmed).toBe(false);
+  });
+});
+
+describe("move", () => {
+  it("writes the move it is given, as a copy", () => {
+    const move = { kind: "pan" as const, durationS: 4, ease: "linear" as const, endPose: { positionM: [1, 1.6, 2] as [number, number, number], headingDeg: 50, pitchDeg: -3, rollDeg: 0 } };
+    const s = buildShot({ ...base, move });
+    expect(s.move).toEqual(move);
+    expect(s.move.endPose).not.toBe(move.endPose);
+    expect(validateShot(s)).toEqual({ ok: true });
   });
 });
 

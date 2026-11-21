@@ -503,3 +503,9 @@ button.thumb:hover img { outline: 2px solid var(--line-strong); outline-offset: 
 /* No scene open: the Stage has nothing to look through, so it has no mask and no scale notice. */
 .stage[data-scene="none"] #scale-notice { display: none; }
 .stage[data-scene="none"] .switch { color: var(--text-3); cursor: not-allowed; }
+
+/* Move section: the two preview buttons share the row, and the sections that ignore input during a preview dim. */
+#move-buttons { display: flex; gap: var(--s2); }
+#move-buttons .btn { flex: 1 1 0; }
+#move-buttons .btn[aria-pressed="true"] { border-color: var(--text); }
+.insp[inert] { opacity: 0.55; }
