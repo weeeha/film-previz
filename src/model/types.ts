@@ -29,6 +29,8 @@ export type Scene = {
   frontHeadingDeg: number;
   lightNote: string;
   markers: Marker[];
+  /** The line of action, set from two stand-ins. x and z in metres. Absent or null when not set. */
+  actionAxis?: { label: string; aM: [number, number]; bM: [number, number] } | null;
   createdAt: string;
 };
 
