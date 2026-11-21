@@ -10,6 +10,8 @@ import type { Session } from "../model/session";
 import { nextShotIdFor } from "../model/store";
 import { buildShot, aspectIdFor, stripLine, shotTitle, type ShotDetails } from "../model/shotRecord";
 import { SIZE_LABELS, type Shot, type SizeLabel } from "../model/types";
+import { createStandInSet } from "../model/standIns";
+import { createStandInsPanel } from "./standIns";
 import { el, labelled } from "./dom";
 
 export const FRAME_GRAB_WIDTH_PX = 1920;
@@ -80,14 +82,10 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   const lens = createLensPanel(shot);
   const camera = createCameraPanel(shot, viewer, store);
 
-  const later = (id: string, title: string, text: string) => {
-    const d = el("details", { className: "insp", id },
-      el("summary", {}, el("h2", {}, title), el("span", { className: "hint" }, "Later step")),
-      el("div", { className: "insp-body" }, el("p", { className: "meta" }, text)),
-    );
-    return d;
-  };
-  const standins = later("standins", "Stand-ins", "Stand-ins arrive in a later step. They will show how large a person is in the frame.");
+  const standInSet = createStandInSet();
+  const standInsPanel = createStandInsPanel(viewer, shot, standInSet, () => heightPresetsState(store.get()).enabled);
+  const standins = standInsPanel.root;
+  if (import.meta.env.DEV) (window as unknown as { __standIns: typeof standInSet }).__standIns = standInSet;
   const referencePanel = createReferencePanel(viewer);
   const reference = referencePanel.root;
 
@@ -170,13 +168,19 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
     primaryBtn.disabled = off; asNewBtn.disabled = off; saveBtn.disabled = off;
     paintScale();
   }
-  function paintSession(): void { paintStrip(); paintFoot(); paintMode(); }
+  let lastSceneId: string | null = null;
+  function paintSession(): void {
+    const id = session.scene()?.id ?? null;
+    if (id !== lastSceneId) { lastSceneId = id; standInSet.replace([]); } // stand-ins belong to a scene
+    paintStrip(); paintFoot(); paintMode();
+  }
 
   let active = false;
   let viewportEl: HTMLElement | null = null;
   through.addEventListener("change", paintMode);
   shot.subscribe(paint);
   store.subscribe(clearNote);
+  store.subscribe(standInsPanel.refresh);
   session.subscribe(paintSession);
   paint();
   paintSession();
@@ -184,6 +188,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   function openShot(rec: Shot): void {
     shot.setLens({ focalMm: rec.lens.focalLengthMm, sensor: { ...rec.lens.sensor }, aspectId: aspectIdFor(rec.lens.aspect) });
     shot.setPose({ positionM: [...rec.pose.positionM], headingDeg: rec.pose.headingDeg, pitchDeg: rec.pose.pitchDeg, rollDeg: rec.pose.rollDeg });
+    standInSet.replace(rec.standIns);
     writeDetails({ name: rec.name, sizeLabel: rec.sizeLabel, job: rec.job, action: rec.action, notes: rec.notes });
     through.checked = true;
     session.setEditing(rec.id);
@@ -209,7 +214,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
         sceneId: sc.id,
         lens: { focalMm: shot.lens.focalMm, sensor: shot.lens.sensor, aspect: shot.lens.aspect },
         pose: shot.pose,
-        standIns: [],
+        standIns: standInSet.list(),
         scaleConfirmed: heightPresetsState(store.get()).enabled,
         frame: { widthPx: g.widthPx, heightPx: g.heightPx },
         referencePhoto: referencePanel.reference(),

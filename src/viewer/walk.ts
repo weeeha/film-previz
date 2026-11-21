@@ -7,6 +7,8 @@ export class WalkControls {
   speed: number;
   /** When false, drag and keys are ignored (the Stage looks through the shot camera instead). */
   enabled = true;
+  /** Return true for a pointer press that something else handles (a stand-in drag), so it does not start a look drag. */
+  ignorePress: ((e: PointerEvent) => boolean) | null = null;
   private yaw = 0;
   private pitch = 0;
   private keys = new Set<string>();
@@ -23,7 +25,7 @@ export class WalkControls {
       target.addEventListener(type, fn as EventListener);
       this.cleanup.push(() => target.removeEventListener(type, fn as EventListener));
     };
-    on(dom, "pointerdown", (e: PointerEvent) => { if (!this.enabled) return; this.dragging = true; dom.setPointerCapture(e.pointerId); });
+    on(dom, "pointerdown", (e: PointerEvent) => { if (!this.enabled || this.ignorePress?.(e)) return; this.dragging = true; dom.setPointerCapture(e.pointerId); });
     on(dom, "pointerup", (e: PointerEvent) => { this.dragging = false; if (dom.hasPointerCapture(e.pointerId)) dom.releasePointerCapture(e.pointerId); });
     on(dom, "pointermove", (e: PointerEvent) => {
       if (!this.dragging) return;

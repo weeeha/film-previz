@@ -377,7 +377,11 @@ td.num, th.num { text-align: right; }
 .cmp-guides[data-who="photo"] .cmp-ruler .cmp-tag.mid { left: 0; }
 .cmp-guides[data-who="frame"] .cmp-ruler .cmp-tag.mid { right: 0; }
 .cmp-grid { display: grid; grid-template-columns: auto 1fr 1fr; gap: var(--s2) var(--s2); align-items: center; }
-.cmp-grid .group-label { margin: 0; }
+.cmp-grid .standin-open { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--text); text-align: left; cursor: pointer; text-underline-offset: 2px; }
+.standin-open:hover { text-decoration: underline; }
+.standin[aria-current="true"] .standin-open { color: var(--accent); }
+.standin-edit { grid-column: 1 / -1; display: grid; gap: var(--s3); margin-top: var(--s2); }
+.group-label { margin: 0; }
 .cmp-grid input[type="number"] { min-width: 0; width: 100%; }
 .cmp-grid .mono { font-size: 12px; }
 

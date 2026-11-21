@@ -438,3 +438,33 @@ test("five_shots_saved_reloaded_each_opens_to_the_same_frame", async ({ page }) 
   }
   console.log("five shots mean abs diffs", JSON.stringify(diffs));
 });
+
+test("a_shot_saved_with_a_stand_in_reopens_to_the_same_frame", async ({ page }) => {
+  test.skip(!haveScenes(), SKIP);
+  test.setTimeout(900_000);
+  const door = await sceneWithScale(page);
+  await page.click('a[data-route="/stage"]');
+  await page.locator("#through").check();
+  await page.locator('label[for="f24"]').click();
+  await page.locator('label[for="hp-eye"]').click();
+  await page.fill("#cam-x", (door.x + 0.5).toFixed(3));
+  await page.fill("#cam-z", (door.z + 4).toFixed(3));
+  await page.fill("#cam-heading", "0");
+  await page.fill("#cam-pitch", "0");
+  await page.fill("#shot-name", "With a stand-in");
+  await page.click("#standin-add");
+  await page.fill("#si-name", "Anna");
+  await saveShot(page, 1);
+  const stored = await readStored(page, "shot-001");
+  expect(stored.shot.standIns).toHaveLength(1);
+  expect(stored.shot.standIns[0]).toMatchObject({ label: "Anna", heightM: 1.75, headHeightM: 0.23 });
+
+  await page.reload();
+  await openLarge(page, false);
+  const d = await diffAfterOpen(page, 1);
+  console.log("stand-in shot mean abs diff", JSON.stringify(d));
+  expect(d.settleOk).toBe(true);
+  expect(d.diff).toBeLessThan(THRESHOLD);
+  const n = await page.evaluate(() => (window as unknown as { __standIns: { list(): unknown[] } }).__standIns.list().length);
+  expect(n).toBe(1);
+});

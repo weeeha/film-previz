@@ -278,6 +278,54 @@ export class Viewer {
     return hit ? this.content.worldToLocal(hit.point.clone()) : null;
   }
 
+  /** A raycaster through a client (page) pixel, using the camera now drawn: the shot camera in look-through, else the walk camera. Default layer only. */
+  raycasterAt(clientX: number, clientY: number): THREE.Raycaster {
+    const rect = this.renderer.domElement.getBoundingClientRect();
+    const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -(((clientY - rect.top) / rect.height) * 2 - 1));
+    this.scene.updateMatrixWorld(true);
+    const cam = this.activeCamera();
+    cam.updateMatrixWorld(true);
+    const ray = new THREE.Raycaster();
+    ray.setFromCamera(ndc, cam);
+    return ray;
+  }
+
+  /** The first collider hit of a ray, with its face normal in world space turned toward the ray origin. */
+  private colliderHit(ray: THREE.Raycaster): { point: THREE.Vector3; normal: THREE.Vector3 } | null {
+    if (!this.collider) return null;
+    const saved = ray.layers.mask;
+    ray.layers.enable(HELPER_LAYER); // the collider lives on the helper layer
+    const hit = ray.intersectObject(this.collider, false)[0];
+    ray.layers.mask = saved;
+    if (!hit?.face) return null;
+    const normal = hit.face.normal.clone().transformDirection(this.collider.matrixWorld);
+    if (normal.dot(ray.ray.direction) > 0) normal.negate();
+    return { point: hit.point.clone(), normal };
+  }
+
+  /**
+   * A point on the floor under the pointer, in the metric world frame, through the camera now drawn.
+   * A collider hit whose face normal points up (y above 0.7) wins; otherwise the plane y = 0.
+   * Null when the ray misses or the point is over 50 m away.
+   */
+  pickFloor(clientX: number, clientY: number): THREE.Vector3 | null {
+    const ray = this.raycasterAt(clientX, clientY);
+    const hit = this.colliderHit(ray);
+    let p: THREE.Vector3 | null = null;
+    if (hit && hit.normal.y > 0.7) p = hit.point;
+    else p = ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), new THREE.Vector3());
+    if (!p || p.distanceTo(ray.ray.origin) > 50) return null;
+    return p;
+  }
+
+  /** Height of the floor under an x, z in the world frame: the first up-facing collider face below `fromY`, else 0. */
+  floorHeightAt(x: number, z: number, fromY: number): number {
+    const ray = new THREE.Raycaster(new THREE.Vector3(x, fromY, z), new THREE.Vector3(0, -1, 0));
+    this.scene.updateMatrixWorld(true);
+    const hit = this.colliderHit(ray);
+    return hit && hit.normal.y > 0.7 ? hit.point.y : 0;
+  }
+
   /** Client (page) pixel position of a content-local point. Used by the tests to aim real clicks. */
   localToClient(p: [number, number, number]): { x: number; y: number } {
     this.scene.updateMatrixWorld(true);
