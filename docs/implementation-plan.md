@@ -432,7 +432,7 @@ Goal: save shots, list them, export a folder that fits film-craft.
 
 ## Phase 4: Stand-ins and blocking (outline)
 
-Expand into steps after phase 3. Depends on how well the collider mesh holds a figure on the floor (phase 0 task 4).
+Built on 2026-11-21 from the step-by-step plan in [phase-4-plan.md](phase-4-plan.md). The outline below is kept for the record.
 
 ### Task 21: Stand-in figures
 

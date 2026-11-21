@@ -54,12 +54,18 @@ npm run test:e2e
 
 `npm test` runs the Vitest suites. Set `FILM_CRAFT_SHOT_LIST` to the path of film-craft's `templates/shot-list.md` so the check that the export header matches that template runs. Without it that one check is skipped. `npm run test:e2e` runs Playwright in Chromium and WebKit, starts its own server on port 5185 and takes about 12 minutes. Tests that need a scene skip when `scenes/` is empty.
 
-Not built yet:
+Built since the first version (2026-11-21), each with tests on the synthetic room:
 
-- Stand-ins and the top-down floor plan
-- Camera moves
-- Quest 3 viewing
+- Stand-ins: capsule figures on the floor with a height, a facing arrow and a readout of how tall they are in the frame
+- The top-down floor plan in the export (`floor-plan.png`), with numbered cameras and an optional action axis
+- Camera moves: push-in, pull-out, pan, tilt, track and handheld, with a preview and an end frame in the export
+- Quest 3 code: an Enter VR button, thumbstick movement and placing shots from the headset. None of it has run on a headset
+
+Not done yet:
+
 - A test with a real Marble export (everything so far ran on the synthetic room)
+- Any check on a Quest 3 headset (list in `notes/xr-results.md`)
+- The items under "Postponed" in `docs/decisions-2026-11-21.md`
 
 ## How it works technically
 
@@ -108,6 +114,8 @@ Lens-accurate describes the virtual camera: it follows the real relation between
 
 - [Spec](docs/spec.md): goals, data model, decisions, acceptance criteria
 - [Implementation plan](docs/implementation-plan.md): phases 0 to 5 plus an optional Quest 3 phase
+- [Phase 4 plan](docs/phase-4-plan.md): stand-ins and floor plan, step by step
+- [Decisions of 2026-11-21](docs/decisions-2026-11-21.md): choices made without the owner, and what is postponed
 
 This repo feeds [film-craft](https://github.com/weeeha/film-craft), the owner's AI film-making notebook. The shot list export follows its shot list template, and the location sheet export follows its location sheet template. Details are in the spec.
 

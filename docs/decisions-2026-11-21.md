@@ -48,4 +48,16 @@ Open question, not acted on: whether any video tool the owner uses accepts the e
 - Quest Browser run: scene loads, door at 2.0 m looks 2.0 m tall, frame rates for the 500k and the 2M file, thumbstick feel, comfort. Needs the Quest 3 headset and the owner (checklist in `notes/xr-results.md`).
 - Tape-measured eye height against a shot placed at the door (within 0.05 m). Needs the headset, a tape and the owner.
 - Whether the frame grab on the Stage matches what the user saw in the headset. Needs the headset and the owner.
-
+- A real Marble export, the Marble cost gate (task 2) and the real-input test with the owner's photo (task 14, criteria 1 and 15). Needs a paid Marble plan and the owner's photo.
+- A Vercel preview (task 20). Needs the owner's yes and his choice of team.
+- The app in desktop Safari by hand. WebKit ran through Playwright only. Needs someone at the Mac.
+- The phase 4 and 5 interface audit: `unslop` review, a states walk with screenshots in both themes, and bringing `tests/audit/states-walk.mjs` up to the current markup. Non-blocking; needs one working session.
+- The owner's word on whether the floor plan drawing is usable for film-craft's 180 degree line check. Needs the owner.
+- A second "Add stand-in" lands on the same spot as the first, 3 m ahead of the camera, so the two overlap until one is moved. Non-blocking fix: offset each new figure sideways.
+- Stand-ins are flat unlit grey with no shading, so a figure reads as a silhouette. Non-blocking: add simple shading that stays the same in the frame grab.
+- A pan is limited to 179 degrees because the heading takes the short way round. Non-blocking.
+- A shot saved between the two camera move commits has no end frame until it is saved again. Only matters for test data.
+- No switch to leave stand-ins out of the frame grab for a clean start image. Needs the owner's call on whether he wants it.
+- The chromium test "a splat file chosen in the file input renders splats" and a few 5 second polls time out when the machine load is above about 20. Non-blocking: rerun on an idle machine, then raise the timeouts if it still fails.
+- Whether any video tool the owner uses accepts the end frame or the camera sentence. Untested; needs the owner's tools.
+- The seven decisions in `docs/phase-4-plan.md` and the eight in the Quest brief (copied below the Quest heading by its executor where they applied) were taken without review. Needs the owner to read them once.
