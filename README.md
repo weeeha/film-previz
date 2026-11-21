@@ -23,6 +23,44 @@ Walk a generated set before a shoot. Give a world model a location description, 
 5. Save the shot. The app stores the frame grab and the camera metadata.
 6. Export the shot list as a folder: `shots.json`, a markdown shot list, the frames, and a location sheet.
 
+## Usage
+
+Install and start the app:
+
+```
+npm install
+npm run dev
+```
+
+The app opens at `http://localhost:5185`. The port is fixed. Chrome and Safari both work, and both need WebGL 2. Windows narrower than 900 px show a message instead of the tool.
+
+You do not need a Marble export to try it. `npm run make-set` writes a synthetic test room into `scenes/` (splats at two sizes, a collider mesh and a file of true measurements). The room is invented, and the files stay out of git.
+
+The three views, in the order a person uses them:
+
+1. **Scenes.** Choose an SPZ or PLY file, and a GLB collider mesh if you have one. Mark a known distance, such as a door, type its length and apply the scale. Name the scene, set which way is front and add notes. A scene you open is listed under Past scenes, and you open the same file again later to get its shots back.
+2. **Stage.** Look through the shot camera, pick a focal length, sensor and aspect, set the height, heading and pitch, and save a shot. Select a saved shot in the strip to update it or save it as a new shot. "Save frame" downloads one JPEG and saves nothing to the scene.
+3. **Shots.** Edit names, size and notes in the table, reorder, duplicate or delete shots (delete has an Undo), then export.
+
+The export is one zip download. It holds `shots.json` (full records), `shot-list.md` (the film-craft shot list columns), `location-sheet.md`, `scene-ref.json` (scene name, file name, SHA-256 and scale source, with no scene data) and `frames/shot-001.jpg` and so on, one frame per shot. Scene files are never included.
+
+Tests:
+
+```
+npm run typecheck
+FILM_CRAFT_SHOT_LIST="/path/to/film-craft/templates/shot-list.md" npm test
+npm run test:e2e
+```
+
+`npm test` runs the Vitest suites. Set `FILM_CRAFT_SHOT_LIST` to the path of film-craft's `templates/shot-list.md` so the check that the export header matches that template runs. Without it that one check is skipped. `npm run test:e2e` runs Playwright in Chromium and WebKit, starts its own server on port 5185 and takes about 12 minutes. Tests that need a scene skip when `scenes/` is empty.
+
+Not built yet:
+
+- Stand-ins and the top-down floor plan
+- Camera moves
+- Quest 3 viewing
+- A test with a real Marble export (everything so far ran on the synthetic room)
+
 ## How it works technically
 
 ```
