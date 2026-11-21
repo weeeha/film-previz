@@ -93,7 +93,8 @@ export function createScenes(
   });
 
   // Open Stage sits in the scale block's row of buttons, as in the draft.
-  const stageLink = el("a", { className: "btn", href: "#/stage", id: "open-stage" }, "Open Stage without scale");
+  const stageLink = el("button", { className: "btn", type: "button", id: "open-stage" }, "Open Stage without scale");
+  stageLink.addEventListener("click", () => { location.hash = "#/stage"; });
   panel.actions.append(stageLink);
 
   // ----- scene details (the draft's aside) -----
@@ -115,7 +116,7 @@ export function createScenes(
     labelled("Scene name", nameIn),
     labelled("Front direction, degrees", frontIn),
     el("div", { className: "fields" }, groundLabel, el("dl", { className: "kv" }, el("dt", {}, "Floor height"), groundFloor, el("dt", {}, "Offset removed"), groundOffset)),
-    labelled("Source", kindSel),
+    labelled("Scene source", kindSel),
     labelled("Source note", noteIn),
     labelled("Light note", lightIn),
     saveDetails,
@@ -136,7 +137,7 @@ export function createScenes(
   const left = el("div", {}, status, preview, placeholder, panel.root, markers.root);
   const grid = el("div", { className: "scenes-grid" }, left, aside);
   const head = el("div", { className: "page-head" }, el("h1", {}, "Scenes"));
-  const root = el("div", { className: "page" }, head, grid, past, splatInput, colliderInput, againInput);
+  const root = el("div", { className: "page scenes-page" }, head, grid, past, splatInput, colliderInput, againInput);
 
   // ----- helpers -----
   const pickSplat = () => splatInput.click();
@@ -176,7 +177,7 @@ export function createScenes(
 
   function facts(o: Opened): HTMLElement {
     const f = (dt: string, dd: string) => el("div", {}, el("dt", {}, dt), el("dd", {}, dd));
-    return el("dl", { className: "facts" }, f("Size", megabytes(o.bytes)), f("Splats", o.splats.toLocaleString("en-US")), f("First frame", `${o.firstFrameS.toFixed(1)} s`));
+    return el("dl", { className: "facts" }, f("Size", megabytes(o.bytes)), f("Splats", o.splats.toLocaleString("en-US")), f("First frame", o.firstFrameS < 0.1 ? "under 0.1 s" : `${o.firstFrameS.toFixed(1)} s`));
   }
 
   function colliderLine(): HTMLElement {
@@ -203,11 +204,12 @@ export function createScenes(
     } else if (n.kind === "parse") {
       const fmt = formatOf(n.file.name).toUpperCase();
       box.append(
-        el("p", {}, el("strong", {}, `This ${fmt} file could not be read.`), " ", mono(n.file.name), ` failed to load: ${n.message}`),
+        el("p", {}, el("strong", {}, `This ${fmt} file could not be read.`), " ", mono(n.file.name), " failed to load."),
+        el("p", { className: "hint", id: "parse-message" }, `Reader message: ${n.message}`),
         el("p", {}, fmt === "SPZ" ? "The file may be cut short. If it is a PLY file with the wrong extension, read it as PLY." : "The file may be cut short or may not be a Gaussian splat PLY."),
       );
-      if (fmt === "SPZ") actions.append(btn("Try as PLY", () => { void openFile(n.file, { asType: "ply" }); }, true, "notice-try-ply"));
-      actions.append(btn("Choose another file", pickSplat, fmt !== "SPZ", "notice-choose"));
+      actions.append(btn("Choose another file", pickSplat, true, "notice-choose"));
+      if (fmt === "SPZ") actions.append(btn("Try as PLY", () => { void openFile(n.file, { asType: "ply" }); }, false, "notice-try-ply"));
     } else if (n.kind === "toolarge") {
       box.append(
         el("p", {}, el("strong", {}, "This scene is too large for this computer's memory."), " ", mono(n.file.name), `, ${megabytes(n.file.size)}, stopped the browser.`),
@@ -253,7 +255,15 @@ export function createScenes(
     } else {
       if (notice) parts.push(noticeEl(notice));
       if (opened && mismatch) {
-        parts.push(mismatchEl(mismatch, opened), facts(opened));
+        // The scale step still needs a collider in this state, so the control stays on screen.
+        parts.push(
+          mismatchEl(mismatch, opened),
+          el("div", { className: "file-row" },
+            el("div", { className: "grow" }, colliderLine()),
+            el("div", { className: "actions" }, btn(collider || rec?.colliderFile ? "Change collider mesh" : "Choose collider mesh", pickCollider, false, "choose-collider")),
+          ),
+          facts(opened),
+        );
       } else if (opened) {
         const chooseCollider = btn(collider || rec?.colliderFile ? "Change collider mesh" : "Choose collider mesh", pickCollider, false, "choose-collider");
         parts.push(
@@ -304,7 +314,9 @@ export function createScenes(
     const s = scale.get();
     const ok = confirmed();
     groundFloor.textContent = ok ? "0.000 m after scaling" : "Not set until the scale is confirmed";
-    groundOffset.textContent = ok ? `${s.groundPlaneOffsetM.toFixed(3)} m` : "None";
+    // The content is shifted down by this offset, so a positive offset means the floor was above the origin.
+    const off = s.groundPlaneOffsetM;
+    groundOffset.textContent = !ok ? "None" : Math.abs(off) < 0.0005 ? "Floor was at the origin" : `Floor was ${Math.abs(off).toFixed(3)} m ${off < 0 ? "below" : "above"} the origin`;
   }
   scale.subscribe(() => { paintStageLink(); paintGround(); });
 

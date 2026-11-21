@@ -15,11 +15,13 @@ export function createHeader(store: ScaleStore): { setSceneName(name: string | n
   }
   store.subscribe(paint);
   paint(store.get());
+  chip.hidden = true; // no scene open yet: only "No scene loaded" shows
 
   return {
     setSceneName(n) {
       name.textContent = n ?? "No scene loaded";
       name.title = n ?? "";
+      chip.hidden = n === null;
     },
   };
 }

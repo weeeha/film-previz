@@ -103,7 +103,8 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   saveBtn.title = "Download the frame as a JPEG file. Nothing is saved to the scene.";
   const saveMsg = el("p", { className: "hint", id: "save-msg" });
   saveMsg.setAttribute("aria-live", "polite");
-  const foot = el("div", { className: "insp-foot" }, saveMsg, el("div", { className: "row" }, primaryBtn, asNewBtn, saveBtn));
+  // Two rows in every state, so the footer does not jump: the filled control (and "Save as new shot"), then "Save frame".
+  const foot = el("div", { className: "insp-foot" }, saveMsg, el("div", { className: "row" }, primaryBtn, asNewBtn), el("div", { className: "row" }, saveBtn));
   const inspector = el("aside", { className: "inspector" }, scroll, foot);
   inspector.setAttribute("aria-label", "Inspector");
 
@@ -120,7 +121,11 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   }
   function paintMode(): void {
     walkHint.textContent = through.checked ? "Arrow keys nudge the shot camera." : "Drag to look. W A S D to move.";
-    viewer.lookThrough = active && through.checked;
+    const open = sceneOpen();
+    through.disabled = !open;
+    maskText.hidden = !open;
+    root.dataset.scene = open ? "open" : "none";
+    viewer.lookThrough = active && open && through.checked;
     viewer.walk.enabled = !viewer.lookThrough;
     viewportEl?.classList.toggle("walk", !viewer.lookThrough);
     if (viewer.lookThrough) { if (!frame.isConnected) viewportEl?.appendChild(frame); } else frame.remove();
@@ -149,11 +154,11 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
       const thumb = el("span", { className: "t" });
       thumb.style.setProperty("--ar", String(r.lens.aspect));
       if (url) thumb.append(Object.assign(el("img"), { src: url, alt: "" }));
-      const a = el("a", { className: "shot", href: "#/stage" }, thumb, el("b", {}, shotTitle(r)), el("span", { className: r.scaleConfirmed ? "" : "wrap" }, stripLine(r)));
+      const a = el("button", { className: "shot", type: "button" }, thumb, el("b", {}, shotTitle(r)), el("span", { className: r.scaleConfirmed ? "" : "wrap" }, stripLine(r)));
       a.title = shotTitle(r);
       a.dataset.shotId = r.id;
       if (editing === r.id) { a.setAttribute("aria-current", "true"); a.append(el("span", {}, el("strong", {}, "Editing"))); }
-      a.addEventListener("click", (e) => { e.preventDefault(); openShot(r); });
+      a.addEventListener("click", () => openShot(r));
       return a;
     }));
   }
@@ -162,10 +167,10 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
     primaryBtn.textContent = cur ? `Update shot ${cur.number}` : "Save shot";
     asNewBtn.hidden = !cur;
     const off = !sceneOpen();
-    primaryBtn.disabled = off; asNewBtn.disabled = off;
+    primaryBtn.disabled = off; asNewBtn.disabled = off; saveBtn.disabled = off;
     paintScale();
   }
-  function paintSession(): void { paintStrip(); paintFoot(); }
+  function paintSession(): void { paintStrip(); paintFoot(); paintMode(); }
 
   let active = false;
   let viewportEl: HTMLElement | null = null;
@@ -250,7 +255,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
       say("Could not save the frame: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       delete saveMsg.dataset.busy;
-      saveBtn.disabled = false;
+      saveBtn.disabled = !sceneOpen();
     }
   });
 

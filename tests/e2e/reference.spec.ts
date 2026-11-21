@@ -15,6 +15,17 @@ async function magentaPng(page: Page): Promise<Buffer> {
   return Buffer.from(b64, "base64");
 }
 
+/** A few hundred splats as a binary PLY. */
+function tinyPly(n = 300): Buffer {
+  const header = "ply\nformat binary_little_endian 1.0\nelement vertex " + n + "\n" +
+    ["x", "y", "z", "f_dc_0", "f_dc_1", "f_dc_2", "opacity", "scale_0", "scale_1", "scale_2", "rot_0", "rot_1", "rot_2", "rot_3"].map((k) => `property float ${k}`).join("\n") + "\nend_header\n";
+  const buf = new Float32Array(n * 14);
+  let s = 7;
+  const rnd = () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 2 ** 32; };
+  for (let i = 0; i < n; i++) buf.set([(rnd() - 0.5) * 2, (rnd() - 0.5) * 0.8, (rnd() - 0.5) * 2, rnd() * 2 - 1, rnd() * 2 - 1, rnd() * 2 - 1, 3, -3, -3, -3, 1, 0, 0, 0], i * 14);
+  return Buffer.concat([Buffer.from(header, "ascii"), Buffer.from(buf.buffer)]);
+}
+
 const box = (page: Page, sel: string) => page.locator(sel).evaluate((e) => { const r = e.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
 const opacity = (page: Page) => page.locator(".cmp-img").evaluate((e) => getComputedStyle(e).opacity);
 
@@ -23,8 +34,13 @@ test("reference_compare_side_by_side_overlay_swap_and_no_leaks", async ({ page }
   const requests: { url: string; method: string; body: string | null }[] = [];
   page.on("request", (r) => requests.push({ url: r.url(), method: r.method(), body: r.postData() }));
 
-  await page.goto("/#/stage");
+  // Look through needs a scene since the audit fix (item 6), so open a small one first.
+  await page.goto("/");
   await page.waitForFunction(() => "__viewer" in window);
+  await page.setInputFiles("#splat-file", { name: "tiny.ply", mimeType: "application/octet-stream", buffer: tinyPly() });
+  await expect(page.locator("#scene-status")).toHaveAttribute("data-splats", /^\d+$/, { timeout: 60_000 });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __session: { scene(): unknown } }).__session.scene() !== null)).toBe(true);
+  await page.evaluate(() => { location.hash = "#/stage"; });
   // Look through starts on, as in the draft. This test begins from the walk view.
   await expect(page.locator("#through")).toBeChecked();
   await page.locator("#through").uncheck();

@@ -109,7 +109,7 @@ async function diffAfterOpen(page: Page, shotNumber: number): Promise<{ diff: nu
   await page.goto("/#/shots");
   await page.locator(`button[aria-label="Open shot ${shotNumber} on the Stage"]`).click();
   await expect(page.getByRole("heading", { level: 1, name: "Stage" })).toBeVisible();
-  await expect(page.locator(`#strip a[aria-current="true"]`)).toContainText(`${shotNumber} `);
+  await expect(page.locator(`#strip button[aria-current="true"]`)).toContainText(`${shotNumber} `);
   return page.evaluate(async (n) => {
     const w = window as unknown as { __viewer: { grabShot(w: number): Promise<{ blob: Blob; widthPx: number; heightPx: number }>; lastSettle: { ok: boolean } | null }; __session: { shots(): Array<{ id: string; number: number; sceneId: string }> } };
     const rec = w.__session.shots().find((s) => s.number === n)!;
@@ -178,7 +178,7 @@ test("shots_view_save_edit_reorder_duplicate_delete_undo_and_open", async ({ pag
   await saveShot(page, 3);
 
   // strip: thumbnails in the shot's aspect, number and name, lens and height, Editing on the current one
-  const strip = page.locator("#strip a.shot");
+  const strip = page.locator("#strip button.shot");
   await expect(strip).toHaveCount(3);
   await expect(strip.nth(2)).toHaveAttribute("aria-current", "true");
   await expect(strip.nth(2)).toContainText("3 At the chair");
@@ -211,7 +211,7 @@ test("shots_view_save_edit_reorder_duplicate_delete_undo_and_open", async ({ pag
   const rows = page.locator("#shots-table tbody tr");
   await expect(rows).toHaveCount(3);
   await expect(page.locator("#row-count")).toHaveText("3 shots");
-  await expect(page.locator("#shot-count-head")).toHaveText("3 shots on this scene.");
+  await expect(page.locator("#shot-count-head")).toHaveCount(0); // the count shows once in the footer, not in the page head
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("35 mm");
   await expect(rows.nth(0).locator("td").nth(3)).toContainText("Full frame, 16:9");
   await expect(rows.nth(2).locator("td").nth(3)).toContainText("Full frame, 3:2");
@@ -288,7 +288,7 @@ test("shots_view_save_edit_reorder_duplicate_delete_undo_and_open", async ({ pag
   await rows.nth(0).locator("button.thumb").click();
   await expect(page.getByRole("heading", { level: 1, name: "Stage" })).toBeVisible();
   await expect(page.locator("#through")).toBeChecked();
-  await expect(page.locator("#strip a[aria-current=true]")).toHaveCount(1);
+  await expect(page.locator("#strip button[aria-current=true]")).toHaveCount(1);
 });
 
 test("criterion_6_stored_frame_is_1920_wide_in_the_shot_aspect", async ({ page }) => {
@@ -334,7 +334,7 @@ test("criterion_7_eye_preset_records_1_60_with_scale_and_presets_are_off_without
   console.log("criterion 7", JSON.stringify({ scaleConfirmed: ok.shot.scaleConfirmed, heightAboveGroundM: ok.shot.heightAboveGroundM, unconfirmed: un.shot.scaleConfirmed }));
   expect(ok.shot.scaleConfirmed).toBe(true);
   expect(Math.abs(ok.shot.heightAboveGroundM - 1.6)).toBeLessThan(0.01);
-  await expect(page.locator("#strip a.shot").nth(1)).toContainText("eye 1.6 m");
+  await expect(page.locator("#strip button.shot").nth(1)).toContainText("eye 1.6 m");
 });
 
 type Plan = { dx: number; dz: number; heading: string; pitch: string; focal: string; aspect: string; preset: string; name: string };

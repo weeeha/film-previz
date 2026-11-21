@@ -26,7 +26,12 @@ function markTab(route: Route): void {
 if (!hasWebGL2()) {
   // Nothing can be shown without WebGL 2: every route says so.
   createHeader(sceneScale);
-  startRouter((route) => { markTab(route); main.replaceChildren(noWebglPage()); });
+  startRouter((route) => {
+    // The Stage and Shots routes cannot work either, so they go to Scenes and the Scenes tab is the current one.
+    if (route !== "/") { location.replace("#/"); return; }
+    markTab(route);
+    main.replaceChildren(noWebglPage());
+  });
 } else {
   boot();
 }

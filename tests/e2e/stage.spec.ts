@@ -19,8 +19,15 @@ test("stage_lens_readout_matches_the_draft_and_presets_are_off_without_scale", a
   await page.goto("/#/stage");
   await expect(page.getByRole("heading", { level: 1, name: "Stage" })).toBeVisible();
   // header: scene name and scale chip on every route
-  await expect(page.locator("#scale-chip")).toHaveText("Scale not confirmed");
+  // header with no scene open: only "No scene loaded", no scale chip
+  await expect(page.locator("#scale-chip")).toBeHidden();
   await expect(page.locator("#scene-name")).toHaveText("No scene loaded");
+  // nothing to look through, save or mask without a scene
+  await expect(page.locator("#through")).toBeDisabled();
+  await expect(page.locator("#save-frame")).toBeDisabled();
+  await expect(page.locator("#save-shot")).toBeDisabled();
+  await expect(page.locator("#frame")).toHaveCount(0);
+  await expect(page.locator("#scale-notice")).toBeHidden();
   // look through shot camera starts on, as in the draft
   await expect(page.locator("#through")).toBeChecked();
   // presets disabled, with the draft's wording

@@ -55,8 +55,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
   type ExportState = { kind: "idle" } | { kind: "exporting"; done: number; total: number } | { kind: "exported"; count: number; file: string } | { kind: "error"; message: string };
   let exportState: ExportState = { kind: "idle" };
 
-  const count = el("p", { className: "meta", id: "shot-count-head" });
-  const head = el("div", { className: "page-head" }, el("h1", {}, "Shots"), count);
+  const head = el("div", { className: "page-head" }, el("h1", {}, "Shots"));
   const table = el("div", { className: "table-wrap" });
   table.tabIndex = 0;
   table.setAttribute("role", "region");
@@ -231,6 +230,13 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
     paintExport(session.shots());
   }
 
+  /** A filled button that changes the route. A button, not a link, so plain Tab reaches it in Safari. */
+  function goTo(label: string, hash: string, id: string): HTMLButtonElement {
+    const b = el("button", { className: "btn btn-primary", type: "button", id }, label);
+    b.addEventListener("click", () => { location.hash = hash; });
+    return b;
+  }
+
   const plural = (n: number) => `${n} ${n === 1 ? "shot" : "shots"}`;
 
   function paintExport(list: Shot[]): void {
@@ -285,7 +291,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
         li("shots.json", "Full records of every shot."),
         li("shot-list.md", "Table with the film-craft shot list columns."),
         li("location-sheet.md", "Filled from the scene record."),
-        li("frames/shot-001.jpg", list.length ? `One frame per shot, up to shot-${last}.jpg. Exact aspect, no interface.` : "One frame per shot. Exact aspect, no interface."),
+        li("frames/shot-001.jpg", list.length ? `One frame per shot, up to shot-${last}.jpg. Saved at the shot's aspect, without overlays.` : "One frame per shot. Saved at the shot's aspect, without overlays."),
         li("floor-plan.png", "Not included yet. Top-down view with numbered cameras arrives with stand-ins."),
         li("scene-ref.json", "Scene name, file name, SHA-256 and scale source. No scene data."),
       ),
@@ -298,15 +304,13 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
     const scene = session.scene();
     const list = session.shots();
     const noun = plural(list.length);
-    count.textContent = scene ? `${noun} on this scene.` : "";
-    count.hidden = !scene;
 
     const parts: Node[] = [];
     if (!scene) {
       parts.push(el("div", { className: "empty-state", id: "no-scene" },
         el("h2", {}, "No scene open"),
         el("p", { className: "meta", style: S("max-width:62ch") }, "Shots belong to a scene. Open the scene file on Scenes, and its saved shots appear here."),
-        el("a", { className: "btn btn-primary", href: "#/" }, "Open Scenes"),
+        goTo("Open Scenes", "#/", "open-scenes"),
       ));
     } else {
       if (undo) {
@@ -323,7 +327,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
         parts.push(el("div", { className: "empty-state", id: "no-shots" },
           el("h2", {}, "No shots yet"),
           el("p", { className: "meta", style: S("max-width:62ch") }, "Place the camera and pick a lens on the Stage, then save a shot. It is listed here with its frame, lens and height."),
-          el("a", { className: "btn btn-primary", href: "#/stage" }, "Open Stage"),
+          goTo("Open Stage", "#/stage", "open-stage"),
         ));
       } else {
         const th = (t: string, cls = "") => el("th", { className: cls }, t);

@@ -96,7 +96,7 @@ test("scenes_tiny_scene_loaded_state_details_and_past_list", async ({ page }) =>
   const facts = page.locator(".facts");
   await expect(facts).toContainText("Splats");
   await expect(facts.locator("dd").nth(1)).toHaveText("300");
-  await expect(facts.locator("dd").nth(2)).toHaveText(/^\d+\.\d s$/);
+  await expect(facts.locator("dd").nth(2)).toHaveText(/^(\d+\.\d s|under 0\.1 s)$/);
   // no collider: said plainly, with a way to choose one
   await expect(page.locator("#collider-line")).toContainText("No collider mesh.");
   await expect(page.getByRole("button", { name: "Choose collider mesh" })).toBeVisible();
@@ -202,7 +202,11 @@ test("scenes_unreadable_spz_offers_try_as_ply", async ({ page }) => {
   const n = page.locator(".notice.err");
   await expect(n).toContainText("This SPZ file could not be read.", { timeout: 60_000 });
   await expect(n).toContainText("wrong-name.spz");
-  await expect(n.getByRole("button", { name: "Try as PLY" })).toHaveClass(/btn-primary/);
+  // the filled control is "Choose another file"; "Try as PLY" is outlined, and the reader's own message sits on a smaller second line
+  await expect(n.getByRole("button", { name: "Choose another file" })).toHaveClass(/btn-primary/);
+  await expect(n.getByRole("button", { name: "Try as PLY" })).not.toHaveClass(/btn-primary/);
+  await expect(n.locator("#parse-message")).toContainText("Reader message:");
+  await expect(n.locator("p").first()).not.toContainText("Reader message");
   await expect(page.locator("#scene-status")).not.toHaveAttribute("data-splats", /.*/);
   expect(await sceneId(page)).toBeNull();
   await n.getByRole("button", { name: "Try as PLY" }).click();
@@ -237,6 +241,12 @@ test("scenes_without_webgl2_says_so_on_every_route", async ({ page }) => {
   await expect(n).toContainText("This browser cannot show scenes.");
   await expect(n).toContainText("film-previz needs WebGL 2");
   await page.evaluate(() => { location.hash = "#/stage"; });
+  await expect(page.locator("#no-webgl")).toBeVisible();
+  // the Stage and Shots routes go to Scenes, so the Scenes tab is the current one
+  await expect(page.locator('.tabs a[aria-current="page"]')).toHaveText("Scenes");
+  expect(await page.evaluate(() => location.hash)).toBe("#/");
+  await page.evaluate(() => { location.hash = "#/shots"; });
+  await expect(page.locator('.tabs a[aria-current="page"]')).toHaveText("Scenes");
   await expect(page.locator("#no-webgl")).toBeVisible();
   await page.evaluate(() => { location.hash = "#/"; });
   await page.getByRole("button", { name: "Check again" }).click();
