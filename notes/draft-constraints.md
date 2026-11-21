@@ -124,3 +124,7 @@ Every item of the fix list, checked in Chromium and WebKit at 1440 x 900, light 
 | 28 | Click on 85 | Page is correct. A real pointer click selects 85 and reads "85 mm on 36 mm: 23.91 degrees horizontal, 13.59 vertical". The earlier click on 14 came from clicking the hidden radio input through its accessibility ref, which sits over the first chip. |
 
 Unslop audit: render tier clean in light and dark at 1280 px on 6 screens (one warning: 180 controls on the long Shots state, only 80 driven). The rule list reports one LAY-4 hit on the three-column facts row, which is data, not cards.
+
+## Owner approval (task 8)
+
+- 2026-11-21: the owner approved the HTML draft in the build session ("Approve, build on"), with no changes requested. Spec criterion 13 is met. Phases 2 and 3 may start.

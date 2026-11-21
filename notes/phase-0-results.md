@@ -185,3 +185,5 @@ Open for the owner (task 5 step 4), recommended first:
 3. Stop here.
 
 The build session took option 1 as far as the HTML draft, which is free and is the next owner gate anyway. The owner has not replied yet.
+
+Owner reply, 2026-11-21: go for phases 2 and 3 on the stand-in set ("Approve, build on"). The Marble spend is still undecided, so the real-input test stays open.
