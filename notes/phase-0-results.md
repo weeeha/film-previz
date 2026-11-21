@@ -79,15 +79,70 @@ Checked by number, on the data after the rotation (`axesReport` in `spike/main.j
 
 The SPZ files give the same box and the same F result.
 
-Not checked yet: Chrome and Safari proper (pending controller run), and the collider GLB has not been loaded in the viewer.
+Not checked yet: Chrome and Safari proper (pending controller run). The collider GLB is now loaded in the viewer and drawn as a wireframe over the splat (see Scale).
 
 ## Scale
 
-TBD
+All numbers in this section come from the synthetic set, in Playwright Chromium 156 (headless, 1280 by 720), not from a Marble export. Raw run output: `out/phase-0-timings.jsonl` lines with `"kind": "scale"`.
+
+How it works in `spike/main.js`:
+- The collider GLB loads with `?collider=/scenes/set-01-collider.glb` or the Collider file input. It is invisible by default, gets the same 180 degree x rotation as the splat, and a wireframe toggle (the button or the W key) shows it. Splat and collider sit in one group, so scale and shift apply to both.
+- Mark: press "Mark 2 points", click the floor at the door base, then the door top edge. A raycast against the collider reads each point. The page shows the raw distance. Type the known length, press Apply. Factor = known / measured. The group is scaled by the factor, the camera moves with it, and the scene is shifted so the floor is at y = 0. Floor rule chosen: the lower of the two marked points becomes y = 0, so the first point should be on the floor.
+- Measure: after Apply the page stays in measure mode. Two new clicks report the distance and the vertical difference.
+- Automated path: `?src=/scenes/set-01-500k.ply&collider=/scenes/set-01-collider.glb&autoscale=1&known=2.00`. Door base and top come from `scenes/set-01-truth.json`, are projected to the screen with the camera, and the collider is raycast through those screen points. The raycast hits are what is measured. The truth file is used only to choose where to aim and to score the answer.
+- The mouse path was also run once with scripted clicks at the same screen points, and gave the same factor (2.5000 on the exact edge points, see below).
+
+Result, door entered as 2.00 m (500k and 2M files give identical scale numbers, since the collider does the picking):
+
+| Step | Value |
+|---|---|
+| Raw door height, from two collider raycasts | 0.8016 raw units (true raw height is 0.8) |
+| Factor = 2.00 / 0.8016 | 2.4950 (true factor 2.5, error -0.2 percent) |
+| Floor shift | world y moved by +1.1976 so the lower door point is y = 0 |
+| Chair seat height, seat top hit minus floor hit | 0.4491 m, truth 0.45, error -0.0009 m |
+| Door width, two edge hits 1 m up | 0.9117 m, truth 0.90, error +0.0117 m |
+| Door height re-measured after scale | 2.000 m, truth 2.00, error 0.000 m (door top y reads 1.9994) |
+
+All second checks are well inside the 0.15 m bound. Why the error is not zero: the door top edge is an exact edge of the door slab, and the ray through it landed on the back wall 0.05 m behind the door face, not on the face. That is why the raw height reads 0.8016 and not 0.8000. The width points have the same edge ambiguity (1.2 cm). When the scripted mouse clicks hit the door face itself the raw distance was exactly 0.8000 and the factor 2.5000. A real user clicking an edge on a real collider will have the same kind of error, probably larger. Unmeasured on a real export.
+
+Planted fault: known = 3.00 instead of 2.00 (`&known=3.00`). Factor 3.7425. Second checks: chair seat reads 0.6737 m (truth 0.45, error +0.2237 m), door width reads 1.3676 m (truth 0.90, error +0.4676 m), door height reads 3.000 m (truth 2.00, error +1.000 m). `within015` is false. The fault is visible in every second distance, so the check catches it. Scripted-mouse run with 3.00: factor 3.7500, seat vertical 0.6750 m, door width 1.3704 m.
+
+Mouse path numbers (scripted clicks, known 2.00): raw 0.8000, factor 2.5000, door width 0.9136 m, seat vertical difference 0.4500 m.
+
+Marble metadata route (`semantics_metadata.metric_scale_factor`, `ground_plane_offset`): API route not tested (cost gate). No World Labs endpoint was called. The metadata route stays unmeasured.
+
+Limits: one synthetic room with flat, exact surfaces and a hand-made collider, so the collider is perfect here. Both the scale check and the fault check prove the tooling, not how accurate a Marble collider is.
 
 ## Splat picking
 
-TBD
+Question: can the splat itself be raycast, so the collider is optional for picking? Evidence from the installed package, `@sparkjsdev/spark` 2.4.0:
+- `node_modules/@sparkjsdev/spark/dist/types/SplatMesh.d.ts` declares `raycastable: boolean`, `minRaycastOpacity: number`, and `raycast(raycaster, intersects)`.
+- The implementation (`spark.module.js`, `SplatMesh.raycast`) copies the splat data into a Wasm buffer in batches and returns every splat the ray passes through, with a distance. `minRaycastOpacity` defaults to 0.2. So yes: it supports `THREE.Raycaster.intersectObject(splatMesh)` in 2.4.0, on the CPU, scanning all splats per ray. It needs the mesh to have been initialised and updated for a few frames first.
+
+Measured, after scale with the 2.00 m door. Nearest of the returned hits is used. Offset = distance between the splat hit and the collider hit on the same screen ray, in meters. The collider is exact here, so it stands in for the true surface. Truth offset is measured against the true metric point and includes the 0.2 percent scale error.
+
+| Target | Splat hits on ray | 500k: offset from collider | 2M: offset from collider | 2M: offset from truth |
+|---|---|---|---|---|
+| Door face | 4 (500k), 2 (2M) | 0.0068 m | 0.0063 m | 0.0145 m |
+| Floor | 4 | 0.0337 m | 0.0133 m | 0.0170 m |
+| Left wall | 0 (500k, a miss), 3 (2M) | no hit | 0.0060 m | 0.0147 m |
+| Left wall, second point | 2 (500k), 5 (2M) | 0.0177 m | 0.0108 m | 0.0181 m |
+| Right wall | 4 (500k), 2 (2M) | 0.0267 m | 0.0085 m | 0.0171 m |
+| Chair seat top | 14 (500k), 15 (2M) | 0.0195 m | 0.0108 m | 0.0152 m |
+
+Over a grid of 153 rays across the view: the 2M file had 153 of 153 splat hits, mean offset 0.0112 m, 95th percentile 0.0227 m, max 0.0278 m. The 500k file had 152 of 153 hits (one miss), mean 0.0243 m, 95th percentile 0.0472 m, max 0.0535 m. In every case the splat hit is in front of the collider surface along the ray (it is the nearest of several splats whose soft ellipsoids the ray crosses), by roughly one to two splat widths. The splat sigma is 0.0072 m at 2M and 0.0144 m at 500k, so the offset shrinks with splat size.
+
+Cost: one ray took about 23 ms at 500k and about 95 ms at 2M (Chromium, M2 Max). That is fine for a click, too slow for something that raycasts every frame. Unmeasured: other machines, Safari.
+
+What this says, with the limits stated: on a clean synthetic set Spark picking lands within about 1 to 3 cm of the surface at 2M and 2 to 5 cm at 500k, and it can miss where splats are sparse (one miss at 500k, none at 2M). Picking is therefore usable for clicks, but it has a bias toward the camera and a miss rate that depends on splat density, and a real scan has floaters, holes and soft surfaces that this set does not. The spec decision stands: keep the collider mesh for picking and scale marking, and treat splat picking as a fallback that is unmeasured on a real export. The numbers above are a best case.
+
+## Collider fit
+
+Checked two ways, both on the synthetic set.
+- By eye: wireframe over the splat in the start pose (screenshot `reference/phase-0-set-01-scale.png`, git-ignored, Chromium 1280 by 720, scale applied). The edges of the room, the door slab and the chair box line up with the splat surfaces.
+- By number: the distance from every splat centre to the nearest collider triangle, after scale. 500k and 2M agree. Excluding the sign area (the sign panel and the F are in the splats but not in the collider on purpose): mean 0.0005 m, 99th percentile 0.0010 m, worst 0.0010 m (2M splats, 60 triangles). Including the sign: worst 0.0205 m, which is the F standing 0.02 m proud of the wall. With the wrong factor of 3.7425 the worst reads 0.0307 m, the same errors scaled up.
+
+The worst real mismatch of 1 mm is sampling and storage precision, not a fit error, because this collider is built from the same geometry as the splats. This proves the tooling only and says nothing about a real Marble collider, which is a separately generated mesh and may be off by far more. Unmeasured on a real export.
 
 ## Versions
 

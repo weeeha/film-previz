@@ -9,12 +9,28 @@
   canvas { display: block; }
   #bar { position: fixed; top: 8px; left: 8px; padding: 6px 8px; background: #000a; border-radius: 4px; }
   #status { margin-left: 8px; }
+  .row { margin-top: 6px; }
+  button { font: inherit; }
+  #readout { font: 12px ui-monospace, monospace; min-height: 1.2em; }
+  button.on { background: #cfe8ff; }
   #results { position: fixed; bottom: 8px; left: 8px; max-height: 40vh; overflow: auto; margin: 0; padding: 6px 8px; background: #000a; border-radius: 4px; font: 11px ui-monospace, monospace; }
   #results:empty { display: none; }
 </style>
 </head>
 <body>
-<div id="bar"><input id="file" type="file" accept=".spz,.ply,.splat,.ksplat,.sog"><span id="status">empty scene</span></div>
+<div id="bar">
+  <div><input id="file" type="file" accept=".spz,.ply,.splat,.ksplat,.sog"><span id="status">empty scene</span></div>
+  <div class="row"><label>Collider <input id="collider-file" type="file" accept=".glb,.gltf"></label>
+    <button id="wire" type="button">Collider wireframe: off (W)</button></div>
+  <div class="row">
+    <button id="mark" type="button">Mark 2 points</button>
+    <label>Known length (m) <input id="known" type="number" step="0.01" value="2.00" style="width:5em"></label>
+    <button id="apply" type="button">Apply</button>
+    <button id="measure" type="button">Measure</button>
+    <button id="clear" type="button">Clear</button>
+  </div>
+  <div id="readout" class="row"></div>
+</div>
 <pre id="results"></pre>
 <script type="module" src="./main.js"></script>
 </body>
