@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "test:e2e": "playwright test",
-    "make-set": "node tests/fixtures/make-sample-set.mjs"
+    "make-set": "node tests/fixtures/make-sample-set.mjs",
+    "audit:states": "node tests/audit/states-walk.mjs"
   },
   "dependencies": {
     "@sparkjsdev/spark": "2.4.0",
