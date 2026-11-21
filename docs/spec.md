@@ -154,6 +154,7 @@ type Shot = {
   move: Move;
   standIns: StandIn[];
   frame: { file: string; widthPx: number; heightPx: number };
+  endFrame?: { file: string; widthPx: number; heightPx: number } | null;  // frames/shot-NNN-end.jpg for a move with an end pose; missing means none
   referencePhoto: { file: string; role: string } | null;  // name only, never the pixels
   notes: string;
   createdAt: string;

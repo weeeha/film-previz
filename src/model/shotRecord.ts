@@ -1,4 +1,5 @@
 // Building a Shot record from what the Stage holds, and the small derived values the strip and the Shots table show.
+import { endFrameFileFor } from "../camera/move";
 import { lensFov } from "../camera/lens";
 import { ASPECTS, HEIGHT_PRESETS, type Sensor } from "../camera/sensors";
 import type { CameraPose, Move, Shot, SizeLabel, StandIn } from "./types";
@@ -20,6 +21,8 @@ export type ShotCapture = {
   standIns: StandIn[];
   scaleConfirmed: boolean;
   frame: { widthPx: number; heightPx: number };
+  /** Size of the grab at the end pose, when the move has one. */
+  endFrame?: { widthPx: number; heightPx: number } | null;
   referencePhoto: { file: string; role: string } | null;
   details: ShotDetails;
   /** Present when an existing shot is updated: its creation time is kept. */
@@ -56,6 +59,7 @@ export function buildShot(c: ShotCapture): Shot {
     move: structuredClone(c.move),
     standIns: structuredClone(c.standIns),
     frame: { file: frameFileFor(c.id), widthPx: c.frame.widthPx, heightPx: c.frame.heightPx },
+    endFrame: c.endFrame ? { file: endFrameFileFor(c.id), widthPx: c.endFrame.widthPx, heightPx: c.endFrame.heightPx } : null,
     referencePhoto: c.referencePhoto ? { ...c.referencePhoto } : null,
     notes: c.details.notes,
     createdAt: c.previous?.createdAt ?? now,

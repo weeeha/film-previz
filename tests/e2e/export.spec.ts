@@ -279,3 +279,47 @@ test("export_without_scale", async ({ page }) => {
   const sheetKey = Object.keys(files).find((k) => k.endsWith("location-sheet.md"))!;
   expect(strFromU8(files[sheetKey]!)).toContain("not included: scale not confirmed");
 });
+
+/** Width and height from the first start-of-frame marker of a JPEG. */
+function jpegSize(b: Uint8Array): { w: number; h: number } {
+  let i = 2;
+  while (i < b.length) {
+    if (b[i] !== 0xff) { i++; continue; }
+    const m = b[i + 1]!;
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) return { h: (b[i + 5]! << 8) | b[i + 6]!, w: (b[i + 7]! << 8) | b[i + 8]! };
+    i += 2 + ((b[i + 2]! << 8) | b[i + 3]!);
+  }
+  throw new Error("no start of frame in the JPEG");
+}
+
+test("push_in_exports_two_frames", async ({ page }) => {
+  test.skip(!haveScenes(), SKIP);
+  test.setTimeout(300_000);
+  await openTiny(page);
+  await page.click('a[data-route="/stage"]');
+  await page.locator("#through").check();
+  // a figure in front of the camera, so the start and end frames differ
+  await page.evaluate(() => (window as unknown as { __standIns: { add(p: number[], h: number): void } }).__standIns.add([0, 0, -2.5], 0));
+  await page.selectOption("#move-kind", "push-in");
+  await page.fill("#move-amount", "1.2");
+  await page.fill("#move-duration", "4");
+  await saveShot(page, 1);
+  await expect(page.locator("#save-msg")).toContainText("with an end frame");
+  await page.click('a[data-route="/shots"]');
+  await expect(page.locator("#export .files li", { hasText: "frames/shot-001.jpg" })).toContainText("1 end frame is included");
+  const files = await exportZip(page);
+  const folder = "tiny-previz/";
+  const a = files[`${folder}frames/shot-001.jpg`]!, b = files[`${folder}frames/shot-001-end.jpg`]!;
+  expect(a, "start frame").toBeDefined();
+  expect(b, "end frame").toBeDefined();
+  const rec = JSON.parse(strFromU8(files[`${folder}shots.json`]!)) as Array<{ frame: { widthPx: number; heightPx: number }; endFrame: { file: string; widthPx: number; heightPx: number } }>;
+  expect(rec[0]!.endFrame.file).toBe("frames/shot-001-end.jpg");
+  for (const j of [a, b]) {
+    expect([j[0], j[1], j[2]]).toEqual([0xff, 0xd8, 0xff]);
+    expect(jpegSize(j)).toEqual({ w: rec[0]!.frame.widthPx, h: rec[0]!.frame.heightPx });
+  }
+  expect([rec[0]!.endFrame.widthPx, rec[0]!.endFrame.heightPx]).toEqual([rec[0]!.frame.widthPx, rec[0]!.frame.heightPx]);
+  expect(Buffer.from(a).equals(Buffer.from(b))).toBe(false);
+  const row = strFromU8(files[`${folder}shot-list.md`]!).split("\n").find((l) => /^\| 1 \|/.test(l))!;
+  expect(row).toContain("push-in 1.2 units over 4 s at 0.30 units/s, ease in and out");
+});

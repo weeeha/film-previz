@@ -2,7 +2,7 @@ import type { Viewer } from "../viewer/scene";
 import type { ShotState } from "../camera/shotState";
 import type { ScaleStore } from "../scale/store";
 import { heightPresetsState } from "../scale/scale";
-import { clampPitch } from "../camera/pose";
+import { applyPose, clampPitch } from "../camera/pose";
 import { createLensPanel } from "./lensPanel";
 import { createCameraPanel, nudgeHeightStep } from "./cameraPanel";
 import { createReferencePanel } from "./overlay";
@@ -217,6 +217,14 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
     saveMsg.textContent = "Saving shot";
     try {
       const g = await viewer.grabShot(FRAME_GRAB_WIDTH_PX);
+      const move = movesPanel.move();
+      // a move with an end pose gets a second grab from that pose, same size; the camera goes back to the start pose after
+      let end: Awaited<ReturnType<typeof viewer.grabShot>> | null = null;
+      if (move.endPose) {
+        saveMsg.textContent = "Saving shot and end frame";
+        applyPose(viewer.shotCamera, move.endPose, shot.frontHeadingDeg());
+        try { end = await viewer.grabShot(FRAME_GRAB_WIDTH_PX); } finally { applyPose(viewer.shotCamera, shot.pose, shot.frontHeadingDeg()); }
+      }
       const db = await session.store();
       const ids = prev ? { number: prev.number, id: prev.id } : nextShotIdFor(await db.listShots(sc.id));
       const rec = buildShot({
@@ -224,7 +232,8 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
         sceneId: sc.id,
         lens: { focalMm: shot.lens.focalMm, sensor: shot.lens.sensor, aspect: shot.lens.aspect },
         pose: shot.pose,
-        move: movesPanel.move(),
+        move,
+        endFrame: end ? { widthPx: end.widthPx, heightPx: end.heightPx } : null,
         standIns: standInSet.list(),
         scaleConfirmed: heightPresetsState(store.get()).enabled,
         frame: { widthPx: g.widthPx, heightPx: g.heightPx },
@@ -232,11 +241,11 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
         details: readDetails(),
         previous: prev ?? undefined,
       });
-      await db.saveShot(rec, g.blob);
+      await db.saveShot(rec, g.blob, end?.blob);
       session.setEditing(rec.id);
       await session.refresh();
       delete saveMsg.dataset.busy;
-      say(`${prev ? "Updated" : "Saved"} shot ${rec.number}, ${g.widthPx} x ${g.heightPx} px`);
+      say(`${prev ? "Updated" : "Saved"} shot ${rec.number}, ${g.widthPx} x ${g.heightPx} px${end ? ", with an end frame" : ""}`);
       saveMsg.dataset.savedShot = rec.id;
     } catch (err) {
       delete saveMsg.dataset.busy;

@@ -26,6 +26,11 @@ The owner asked for the remaining tasks to be built with the recommended option 
 - **A pan is limited to 179 degrees either way.** Reason: the preview turns the short way round, so a larger pan would play backwards.
 - **"Show end" is a toggle ("Show end", then "Show start") and holds the end pose until pressed again.** While a preview plays or the end is held, the Lens and Camera sections and the nudge keys ignore input, and saving a shot or a frame says "Stop the move preview before saving." Reason: a grab taken from the end pose would be saved as the start frame.
 - **A scale change ends a running preview.** Reason: the scale moves the shot camera and re-reads its pose, which would take a point mid-move as the start.
+- **The end frame is stored in the same frames store as the first frame, under the shot id plus "-end".** The store keeps, duplicates and deletes it with the shot, and a shot saved again as static loses it. Reason: the smallest change that fits the existing frame handling, with no new object store and no database version bump.
+- **A saved shot with a move that has an end pose is grabbed twice, the second time with the camera put on the end pose and then back.** Handheld has no end pose, so it has no end frame. Reason: the end pose is the only thing the second grab needs, and the shot camera is the only camera a grab reads.
+- **The track side in the camera sentence uses the scene's front heading.** Reason: a record keeps the heading relative to the front and the position in world axes, so left and right depend on both.
+
+Open question, not acted on: whether any video tool the owner uses accepts the end frame or the camera sentence is untested.
 
 ## Quest phase
 

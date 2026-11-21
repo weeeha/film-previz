@@ -94,6 +94,8 @@ export type Shot = {
   move: Move;
   standIns: StandIn[];
   frame: { file: string; widthPx: number; heightPx: number };
+  /** The frame grabbed at the end pose of a move, same size as `frame`. Missing or null: no end frame. */
+  endFrame?: { file: string; widthPx: number; heightPx: number } | null;
   /** Name only, never the pixels. */
   referencePhoto: { file: string; role: string } | null;
   notes: string;

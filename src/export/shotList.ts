@@ -1,4 +1,5 @@
 // shot-list.md: the 12 columns of film-craft's shot list template, filled from the saved shots (docs/spec.md section 3).
+import { moveSentence } from "../camera/move";
 import { heightText } from "../model/shotRecord";
 import type { Marker, Scene, Shot, SizeLabel } from "../model/types";
 
@@ -40,28 +41,20 @@ const num = (x: number): string => String(+x.toFixed(2));
 /** Table cells are one line, and a pipe would split the cell. */
 export const cell = (text: string): string => text.replace(/\s+/g, " ").trim().replace(/\|/g, "\\|");
 
-function moveText(s: Shot): string {
-  const m = s.move;
-  if (m.kind === "static") return "static";
-  const dur = m.durationS === null ? "" : ` over ${num(m.durationS)} s`;
-  const ease = m.ease === null ? "" : `, ${m.ease === "linear" ? "linear" : "eased"}`;
-  return `${m.kind}${dur}${ease}`;
-}
-
 /**
  * The camera sentence for one shot, for example
  * "Medium shot, 35 mm lens on a full frame sensor 36 mm wide, camera at 1.6 m, at x 0, z 3 from the scene origin, heading 40 degrees, static."
  * With confirmed scale and at least one marker on the scene, the position part names the nearest marker and the
  * distance to it on the floor ("2.5 m from the door"). Otherwise it gives x and z from the scene origin.
  */
-export function cameraSentence(s: Shot, scene?: Pick<Scene, "markers">): string {
+export function cameraSentence(s: Shot, scene?: Pick<Scene, "markers"> & Partial<Pick<Scene, "frontHeadingDeg">>): string {
   const parts: string[] = [];
   if (s.sizeLabel) parts.push(SIZE_WORDS[s.sizeLabel]);
   parts.push(`${num(s.lens.focalLengthMm)} mm lens on a ${s.lens.sensor.label.toLowerCase()} sensor ${num(s.lens.sensor.widthMm)} mm wide`);
   parts.push(s.scaleConfirmed ? `camera at ${heightText(s)}` : `camera ${HEIGHTS_UNVERIFIED}`);
   parts.push(positionPart(s, scene?.markers ?? []));
   parts.push(`heading ${num(s.pose.headingDeg)} degrees`);
-  parts.push(moveText(s));
+  parts.push(moveSentence(s.move, s.pose, s.scaleConfirmed, scene?.frontHeadingDeg ?? 0));
   const sentence = parts.join(", ");
   return sentence.charAt(0).toUpperCase() + sentence.slice(1) + ".";
 }

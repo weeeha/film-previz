@@ -49,7 +49,7 @@ type TextField = "name" | "job" | "action" | "notes";
 
 /** The Shots route, built from draft/shots.html. */
 export function createShots(session: Session, onOpen: (shot: Shot) => void, colliderTriangles: () => Float32Array | null = () => null, hasCollider: () => boolean = () => false): Shots {
-  type Undo = { shot: Shot; frame: Blob | null; index: number; sceneId: string; rev: number; later: boolean };
+  type Undo = { shot: Shot; frame: Blob | null; endFrame: Blob | null; index: number; sceneId: string; rev: number; later: boolean };
   let undo: Undo | null = null;
   let active = false;
   let busy = false;
@@ -111,10 +111,11 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void, coll
     await run(async () => {
       const db = await store();
       const frame = await db.getFrame(shot.sceneId, shot.id);
+      const endFrame = await db.getEndFrame(shot.sceneId, shot.id);
       await db.deleteShot(shot.sceneId, shot.id);
       const rest = list.filter((x) => x.id !== shot.id).map((x) => x.id);
       if (rest.length) await db.reorderShots(shot.sceneId, rest); // later shots move up one number
-      undo = { shot, frame, index, sceneId: shot.sceneId, rev: session.rev() + 1, later: index < rest.length }; // the refresh after this bumps the rev once
+      undo = { shot, frame, endFrame, index, sceneId: shot.sceneId, rev: session.rev() + 1, later: index < rest.length }; // the refresh after this bumps the rev once
     });
   }
   async function restore(): Promise<void> {
@@ -123,7 +124,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void, coll
     dropUndo();
     await run(async () => {
       const db = await store();
-      await db.saveShot(u.shot, u.frame ?? undefined);
+      await db.saveShot(u.shot, u.frame ?? undefined, u.endFrame ?? undefined);
       const ids = (await db.listShots(u.sceneId)).filter((x) => x.id !== u.shot.id).map((x) => x.id);
       ids.splice(u.index, 0, u.shot.id);
       await db.reorderShots(u.sceneId, ids);
@@ -217,7 +218,9 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void, coll
       for (const shot of list) {
         const blob = await db.getFrame(shot.sceneId, shot.id);
         if (!blob) throw new Error(`Shot ${shot.number} has no stored frame.`);
-        frames.push({ shot, bytes: new Uint8Array(await blob.arrayBuffer()) });
+        const end = shot.endFrame ? await db.getEndFrame(shot.sceneId, shot.id) : null;
+        if (shot.endFrame && !end) throw new Error(`Shot ${shot.number} has no stored end frame.`);
+        frames.push({ shot, bytes: new Uint8Array(await blob.arrayBuffer()), ...(end ? { endBytes: new Uint8Array(await end.arrayBuffer()) } : {}) });
         exportState = { kind: "exporting", done: frames.length, total: list.length };
         paintExport(list);
         await new Promise((r) => setTimeout(r, 0)); // let the progress bar draw
@@ -242,6 +245,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void, coll
     return b;
   }
 
+  const endFramesNote = (n: number) => (n ? ` ${n} end ${n === 1 ? "frame is" : "frames are"} included, as shot-NNN-end.jpg, for shots with a camera move.` : "");
   const plural = (n: number) => `${n} ${n === 1 ? "shot" : "shots"}`;
 
   function paintExport(list: Shot[]): void {
@@ -249,6 +253,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void, coll
     const name = scene?.name ?? "the scene";
     const folder = scene ? exportFolderName(scene) : "scene-previz";
     const unverified = list.filter((s) => !s.scaleConfirmed).length;
+    const ends = list.filter((s) => s.endFrame).length;
     const last = String(Math.max(0, ...list.map((s) => Number(/(\d+)$/.exec(s.id)?.[1] ?? 0)))).padStart(3, "0");
     const st = exportState;
     const exporting = st.kind === "exporting";
@@ -296,7 +301,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void, coll
         li("shots.json", "Full records of every shot."),
         li("shot-list.md", "Table with the film-craft shot list columns."),
         li("location-sheet.md", "Filled from the scene record."),
-        li("frames/shot-001.jpg", list.length ? `One frame per shot, up to shot-${last}.jpg. Saved at the shot's aspect, without overlays.` : "One frame per shot. Saved at the shot's aspect, without overlays."),
+        li("frames/shot-001.jpg", list.length ? `One frame per shot, up to shot-${last}.jpg. Saved at the shot's aspect, without overlays.${endFramesNote(ends)}` : "One frame per shot. Saved at the shot's aspect, without overlays."),
         li("floor-plan.png", !scene?.scale.confirmedAt ? "Left out until the scale is confirmed." : hasCollider() ? "Top-down view with numbered cameras." : "Top-down view with numbered cameras. Walls are not drawn without a collider mesh."),
         li("scene-ref.json", "Scene name, file name, SHA-256 and scale source. No scene data."),
       ),

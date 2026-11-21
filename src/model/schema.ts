@@ -122,6 +122,12 @@ export function validateShot(v: unknown): Validation {
     }
   }
 
+  if (v.endFrame !== undefined && v.endFrame !== null && e.rec("endFrame", v.endFrame)) {
+    e.str("endFrame.file", v.endFrame.file);
+    e.num("endFrame.widthPx", v.endFrame.widthPx, 1);
+    e.num("endFrame.heightPx", v.endFrame.heightPx, 1);
+  }
+
   if (v.referencePhoto !== null) {
     if (e.rec("referencePhoto", v.referencePhoto)) {
       e.str("referencePhoto.file", v.referencePhoto.file);

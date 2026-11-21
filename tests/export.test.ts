@@ -5,6 +5,8 @@ import { validateShot } from "../src/model/schema";
 import { SHOT_LIST_COLUMNS, cameraSentence, nearestMarker, headerLine, separatorLine, shotListMarkdown } from "../src/export/shotList";
 import { locationSheetMarkdown } from "../src/export/locationSheet";
 import { buildExportZip, exportZipName } from "../src/export/zip";
+import { buildMove, moveSentence, endFrameFileFor, DEFAULT_DURATION_S } from "../src/camera/move";
+import type { CameraPose } from "../src/model/types";
 import { makeScene, makeShot } from "./helpers/model";
 
 const TEMPLATE = process.env.FILM_CRAFT_SHOT_LIST;
@@ -143,5 +145,71 @@ describe("zip", () => {
     const files = unzipSync(buildExportZip(scene, shots.map((shot, i) => ({ shot, bytes: jpeg(i) })), { kind: "left-out", reason: "scale-not-confirmed" }));
     expect(Object.keys(files).some((n) => n.endsWith("floor-plan.png"))).toBe(false);
     expect(strFromU8(files["set-01-previz/location-sheet.md"]!)).toContain("not included: scale not confirmed");
+  });
+});
+
+describe("move sentence", () => {
+  const start: CameraPose = { positionM: [0, 1.6, 0], headingDeg: 0, pitchDeg: 0, rollDeg: 0 };
+  const mv = (kind: Parameters<typeof buildMove>[0]["kind"], amount: number, durationS = DEFAULT_DURATION_S, ease: "linear" | "ease-in-out" = "ease-in-out") =>
+    buildMove({ kind, amount, durationS, ease }, start);
+
+  it("push_in_sentence", () => {
+    expect(moveSentence(mv("push-in", 1.2), start, true)).toBe("push-in 1.2 m over 4 s at 0.30 m/s, ease in and out");
+  });
+
+  it("speed_is_distance_over_duration", () => {
+    const t = moveSentence(mv("push-in", 3), start, true);
+    const speed = Number(/at ([\d.]+) m\/s/.exec(t)![1]);
+    expect(speed).toBe(0.75);
+    expect(Number(/at ([\d.]+) degrees per second/.exec(moveSentence(mv("pan", 30), start, true))![1])).toBe(7.5);
+  });
+
+  it("pan_sentence_names_the_side", () => {
+    expect(moveSentence(mv("pan", 30, 4, "linear"), start, true)).toBe("pan 30 degrees right over 4 s at 7.5 degrees per second, linear");
+    expect(moveSentence(mv("pan", -30, 4, "linear"), start, true)).toContain("pan 30 degrees left over 4 s");
+    expect(moveSentence(mv("tilt", 10, 4, "linear"), start, true)).toBe("tilt 10 degrees up over 4 s at 2.5 degrees per second, linear");
+    expect(moveSentence(mv("tilt", -10), start, true)).toContain("tilt 10 degrees down");
+    expect(moveSentence(mv("track", 2, 4, "linear"), start, true)).toBe("track 2.0 m right over 4 s at 0.50 m/s, linear");
+    expect(moveSentence(mv("track", -2, 4, "linear"), start, true)).toContain("track 2.0 m left over 4 s");
+    expect(moveSentence(mv("pull-out", 1.25), start, true)).toContain("pull-out 1.25 m over 4 s");
+  });
+
+  it("static_sentence_is_static", () => {
+    expect(moveSentence(mv("static", 0), start, true)).toBe("static");
+    expect(moveSentence(mv("handheld", 0), start, true)).toBe("handheld over 4 s");
+    const t = cameraSentence(makeShot(scene.id, 1));
+    expect(t.endsWith(", static.")).toBe(true);
+  });
+
+  it("unconfirmed_scale_says_units", () => {
+    expect(moveSentence(mv("push-in", 1.2), start, false)).toBe("push-in 1.2 units over 4 s at 0.30 units/s, ease in and out");
+    expect(moveSentence(mv("pan", 30), start, false)).toContain("degrees per second");
+  });
+
+  it("the camera sentence ends with the move sentence", () => {
+    const base = makeShot(scene.id, 1);
+    const s = makeShot(scene.id, 1, { move: buildMove({ kind: "push-in", amount: 1.2, durationS: 4, ease: "ease-in-out" }, base.pose) });
+    expect(cameraSentence(s).endsWith(", push-in 1.2 m over 4 s at 0.30 m/s, ease in and out.")).toBe(true);
+    const row = tableRows(shotListMarkdown(scene, [s]))[0]!;
+    expect(row).toContain("push-in 1.2 m over 4 s at 0.30 m/s, ease in and out");
+  });
+
+  const jpeg = (n: number) => new Uint8Array([0xff, 0xd8, 0xff, 0xe0, n, 0, 1, 2, 3, 4]);
+  it("zip_holds_the_end_frame", () => {
+    const moved = makeShot(scene.id, 1, { move: mv("push-in", 1.2), endFrame: { file: endFrameFileFor("shot-001"), widthPx: 1920, heightPx: 1080 } });
+    const still = makeShot(scene.id, 2);
+    const files = unzipSync(buildExportZip(scene, [{ shot: moved, bytes: jpeg(1), endBytes: jpeg(2) }, { shot: still, bytes: jpeg(3) }], { kind: "left-out", reason: "scale-not-confirmed" }));
+    const end = files["set-01-previz/frames/shot-001-end.jpg"];
+    expect(end).toBeDefined();
+    expect(Array.from(end!)).toEqual(Array.from(jpeg(2)));
+    const records = JSON.parse(strFromU8(files["set-01-previz/shots.json"]!)) as Array<{ endFrame?: { file: string } }>;
+    expect(records[0]!.endFrame?.file).toBe("frames/shot-001-end.jpg");
+    expect(validateShot(records[0])).toEqual({ ok: true });
+  });
+
+  it("static_shot_has_one_frame", () => {
+    const files = unzipSync(buildExportZip(scene, shots.map((shot, i) => ({ shot, bytes: jpeg(i) })), { kind: "left-out", reason: "scale-not-confirmed" }));
+    expect(Object.keys(files).filter((n) => n.includes("/frames/"))).toHaveLength(3);
+    expect(Object.keys(files).some((n) => n.endsWith("-end.jpg"))).toBe(false);
   });
 });

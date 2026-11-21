@@ -104,6 +104,47 @@ describe("scenes and shots", () => {
   });
 });
 
+describe("end frames", () => {
+  const blob = (t: string) => new Blob([t], { type: "image/jpeg" });
+  const withEnd = (sceneId: string, n: number) => makeShot(sceneId, n, {
+    move: { kind: "push-in", durationS: 4, ease: "ease-in-out", endPose: { positionM: [0, 1.6, 1], headingDeg: 10, pitchDeg: -2, rollDeg: 0 } },
+    endFrame: { file: `frames/shot-00${n}-end.jpg`, widthPx: 1920, heightPx: 1080 },
+  });
+
+  it("end_frame_follows_the_shot", async () => {
+    const a = makeScene();
+    await store.saveScene(a);
+    await store.saveShot(withEnd(a.id, 1), blob("first"), blob("last"));
+    expect(await (await store.getEndFrame(a.id, "shot-001"))!.text()).toBe("last");
+    expect(await (await store.getFrame(a.id, "shot-001"))!.text()).toBe("first");
+    // saved again without blobs, as an edit of the name does: the end frame stays
+    await store.saveShot({ ...withEnd(a.id, 1), name: "Renamed" });
+    expect(await (await store.getEndFrame(a.id, "shot-001"))!.text()).toBe("last");
+    // duplicate
+    const copy = await store.duplicateShot(a.id, "shot-001");
+    expect(copy.endFrame?.file).toBe("frames/shot-002-end.jpg");
+    expect(await (await store.getEndFrame(a.id, copy.id))!.text()).toBe("last");
+    expect(validateShot(copy)).toEqual({ ok: true });
+    // changed back to static: the end frame goes
+    await store.saveShot(makeShot(a.id, 1), blob("first"));
+    expect(await store.getEndFrame(a.id, "shot-001")).toBeNull();
+    expect(await store.getEndFrame(a.id, copy.id)).not.toBeNull();
+    // delete
+    await store.deleteShot(a.id, copy.id);
+    expect(await store.getEndFrame(a.id, copy.id)).toBeNull();
+    expect(await store.getFrame(a.id, copy.id)).toBeNull();
+  });
+
+  it("shot_without_end_frame_validates", () => {
+    const s = makeShot(makeScene().id, 1);
+    expect("endFrame" in s).toBe(false);
+    expect(validateShot(s)).toEqual({ ok: true });
+    expect(validateShot({ ...s, endFrame: null })).toEqual({ ok: true });
+    const bad = validateShot({ ...s, endFrame: { file: 3, widthPx: 0, heightPx: 1 } });
+    expect(bad.ok).toBe(false);
+  });
+});
+
 describe("re-opening a file", () => {
   const file = (sha256: string) => ({ name: "set-01-2m.spz", bytes: 1234, sha256 });
 

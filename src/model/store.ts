@@ -29,18 +29,24 @@ export type Store = {
   getSceneByHash(sha256: string): Promise<Scene | null>;
   listScenes(): Promise<SceneSummary[]>;
 
-  saveShot(shot: Shot, frame?: Blob): Promise<void>;
+  /**
+   * `endFrame` is the grab at the end pose of a move. A shot whose record has no `endFrame` loses any stored end
+   * frame; a record that has one and is saved without a blob keeps the stored blob.
+   */
+  saveShot(shot: Shot, frame?: Blob, endFrame?: Blob): Promise<void>;
   getShot(sceneId: string, id: string): Promise<Shot | null>;
   /** Ordered by `number`. */
   listShots(sceneId: string): Promise<Shot[]>;
   /** `orderedIds` must hold every shot of the scene once. Shots are renumbered 1, 2, 3 in that order. */
   reorderShots(sceneId: string, orderedIds: string[]): Promise<Shot[]>;
-  /** The copy goes at the end, with the next number and id, and keeps the frame. */
+  /** The copy goes at the end, with the next number and id, and keeps the frame and the end frame. */
   duplicateShot(sceneId: string, id: string): Promise<Shot>;
-  /** Removes the shot and its frame. Other shots keep their numbers. */
+  /** Removes the shot and its frames. Other shots keep their numbers. */
   deleteShot(sceneId: string, id: string): Promise<void>;
   saveFrame(sceneId: string, shotId: string, frame: Blob): Promise<void>;
   getFrame(sceneId: string, shotId: string): Promise<Blob | null>;
+  /** The end frame of a shot with a move, or null. */
+  getEndFrame(sceneId: string, shotId: string): Promise<Blob | null>;
   nextShotNumber(sceneId: string): Promise<number>;
   nextShotId(sceneId: string): Promise<{ number: number; id: string }>;
 
@@ -64,6 +70,8 @@ export type Store = {
 };
 
 export const sceneIdForHash = (sha256: string): string => `scene-${sha256.slice(0, 12)}`;
+/** The end frame lives in the frames store beside the first frame, under the shot id plus "-end". */
+const endKey = (sceneId: string, shotId: string): [string, string] => [sceneId, `${shotId}-end`];
 export const shotIdForNumber = (n: number): string => `shot-${String(n).padStart(3, "0")}`;
 
 /**
@@ -175,9 +183,10 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
       return out.sort((a, b) => a.scene.createdAt.localeCompare(b.scene.createdAt));
     },
 
-    async saveShot(shot, frame) {
+    async saveShot(shot, frame, endFrame) {
       failIfInvalid("Shot", validateShot(shot));
       const packed = frame ? await packFrame(frame) : null; // before the transaction opens, which would not wait for it
+      const packedEnd = endFrame ? await packFrame(endFrame) : null;
       const tx = db.transaction(["scenes", "shots", "frames"], "readwrite");
       const fin = done(tx);
       const scene = await req(tx.objectStore("scenes").get(shot.sceneId));
@@ -188,6 +197,8 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
       }
       tx.objectStore("shots").put(shot);
       if (packed) tx.objectStore("frames").put(packed, [shot.sceneId, shot.id]);
+      if (packedEnd) tx.objectStore("frames").put(packedEnd, endKey(shot.sceneId, shot.id));
+      else if (!shot.endFrame) tx.objectStore("frames").delete(endKey(shot.sceneId, shot.id));
       await fin;
     },
 
@@ -239,12 +250,15 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
         number,
         name: src.name ? `${src.name} copy` : "",
         frame: { ...src.frame, file: src.frame.file.replace(src.id, newId) },
+        ...(src.endFrame ? { endFrame: { ...src.endFrame, file: src.endFrame.file.replace(src.id, newId) } } : {}),
         createdAt: now,
         updatedAt: now,
       };
       const frame = await req(tx.objectStore("frames").get([sceneId, id]) as IDBRequest<StoredFrame | Blob | undefined>);
       tx.objectStore("shots").put(copy);
       if (frame) tx.objectStore("frames").put(frame, [sceneId, newId]);
+      const endFrame = src.endFrame ? await req(tx.objectStore("frames").get(endKey(sceneId, id)) as IDBRequest<StoredFrame | Blob | undefined>) : undefined;
+      if (endFrame) tx.objectStore("frames").put(endFrame, endKey(sceneId, newId));
       await fin;
       return copy;
     },
@@ -253,6 +267,7 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
       const tx = db.transaction(["shots", "frames"], "readwrite");
       tx.objectStore("shots").delete([sceneId, id]);
       tx.objectStore("frames").delete([sceneId, id]);
+      tx.objectStore("frames").delete(endKey(sceneId, id));
       await done(tx);
     },
 
@@ -272,6 +287,10 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
 
     async getFrame(sceneId, shotId) {
       return unpackFrame(await req(db.transaction("frames").objectStore("frames").get([sceneId, shotId]) as IDBRequest<StoredFrame | Blob | undefined>));
+    },
+
+    async getEndFrame(sceneId, shotId) {
+      return unpackFrame(await req(db.transaction("frames").objectStore("frames").get(endKey(sceneId, shotId)) as IDBRequest<StoredFrame | Blob | undefined>));
     },
 
     async nextShotNumber(sceneId) {

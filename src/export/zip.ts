@@ -1,5 +1,6 @@
 // The export folder as one zip (docs/spec.md section 3). Pure: records and frame bytes in, zip bytes out.
 import { zipSync } from "fflate";
+import { endFrameFileFor } from "../camera/move";
 import { frameFileFor } from "../model/shotRecord";
 import type { Scene, Shot } from "../model/types";
 import { FLOOR_PLAN_FILE } from "./floorPlan";
@@ -10,7 +11,8 @@ export const slugify = (name: string): string => name.toLowerCase().replace(/[^a
 export const exportFolderName = (scene: Pick<Scene, "name">): string => `${slugify(scene.name)}-previz`;
 export const exportZipName = (scene: Pick<Scene, "name">): string => `${exportFolderName(scene)}.zip`;
 
-export type ExportFrame = { shot: Shot; bytes: Uint8Array };
+/** `endBytes` is the end frame of a shot with a move that has an end pose. */
+export type ExportFrame = { shot: Shot; bytes: Uint8Array; endBytes?: Uint8Array };
 
 /** Name, SHA-256 and scale source only. The scene's own bytes and its collider's never go in. */
 export function sceneRefJson(scene: Scene): string {
@@ -38,6 +40,9 @@ export function buildExportZip(scene: Scene, frames: ExportFrame[], floorPlan: F
   // JPEG and PNG data are already compressed: store them as is (level 0).
   const stored: Record<string, [Uint8Array, { level: 0 }]> = {};
   if (floorPlan.kind === "included") stored[`${folder}/${FLOOR_PLAN_FILE}`] = [floorPlan.png, { level: 0 }];
-  for (const f of frames) stored[`${folder}/${frameFileFor(f.shot.id)}`] = [f.bytes, { level: 0 }];
+  for (const f of frames) {
+    stored[`${folder}/${frameFileFor(f.shot.id)}`] = [f.bytes, { level: 0 }];
+    if (f.endBytes) stored[`${folder}/${f.shot.endFrame?.file ?? endFrameFileFor(f.shot.id)}`] = [f.endBytes, { level: 0 }];
+  }
   return zipSync({ ...files, ...stored }, { level: 6 });
 }
