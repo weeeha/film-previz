@@ -32,6 +32,8 @@ export class Viewer {
   readonly walk: WalkControls;
   /** True: the viewport shows the shot camera (the page draws the frame mask). False: the walk camera. */
   lookThrough = false;
+  /** Where the look-through frame sits: centre as a share of the viewport width, the share of the width it may use, and the side margins in px. Side by side compare moves it right. */
+  frameLayout = { cxFrac: 0.5, availFrac: 1, marginX: 32 };
   /** Called after the scale changed the content, so the shot camera panel can re-read its pose. */
   readonly afterScale = new Set<() => void>();
   /** How the last frame grab's sort settle went. For tests and the report. */
@@ -107,8 +109,10 @@ export class Viewer {
   frameSize(): { w: number; h: number } | null {
     const W = this.container.clientWidth, H = this.container.clientHeight;
     const ar = this.shotCamera.aspect;
-    if (W <= 32 || H <= 32) return null;
-    const w = Math.min(W - 32, (H - 32) * ar);
+    const L = this.frameLayout;
+    const availW = W * L.availFrac - L.marginX;
+    if (availW <= 0 || H <= 32) return null;
+    const w = Math.min(availW, (H - 32) * ar);
     return { w, h: w / ar };
   }
 
@@ -128,6 +132,9 @@ export class Viewer {
     d.quaternion.copy(this.shotCamera.quaternion);
     d.aspect = W / H;
     d.fov = (2 * Math.atan(Math.tan((this.shotCamera.fov * Math.PI) / 360) * (H / fs.h)) * 180) / Math.PI;
+    const cx = W * this.frameLayout.cxFrac;
+    if (Math.abs(cx - W / 2) > 0.5) d.setViewOffset(W, H, W / 2 - cx, 0, W, H); // principal point under the frame centre
+    else d.clearViewOffset();
     d.updateProjectionMatrix();
     d.updateMatrixWorld(true);
     return d;

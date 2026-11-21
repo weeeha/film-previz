@@ -5,12 +5,15 @@ import { heightPresetsState } from "../scale/scale";
 import { clampPitch } from "../camera/pose";
 import { createLensPanel } from "./lensPanel";
 import { createCameraPanel, nudgeHeightStep } from "./cameraPanel";
+import { createReferencePanel } from "./overlay";
 import { el, labelled } from "./dom";
 
 export const FRAME_GRAB_WIDTH_PX = 1920;
 
 export type Stage = {
   root: HTMLElement;
+  /** File name and role of the loaded reference photo, or null. Saved with a shot later; the pixels never are. */
+  reference(): { file: string; role: string } | null;
   /** Call when the route becomes Stage (true) or something else (false). Takes the viewport in and gives it back. */
   setActive(active: boolean, viewport: HTMLElement): void;
 };
@@ -68,7 +71,8 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore):
     return d;
   };
   const standins = later("standins", "Stand-ins", "Stand-ins arrive in a later step. They will show how large a person is in the frame.");
-  const reference = later("reference", "Reference photo", "Reference photos arrive in a later step. The photo will stay on this computer.");
+  const referencePanel = createReferencePanel(viewer);
+  const reference = referencePanel.root;
 
   const scroll = el("div", { className: "inspector-scroll" }, shotDetails, lens.root, camera.root, standins, reference);
   scroll.tabIndex = 0;
@@ -100,6 +104,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore):
     viewer.walk.enabled = !viewer.lookThrough;
     viewportEl?.classList.toggle("walk", !viewer.lookThrough);
     if (viewer.lookThrough) { if (!frame.isConnected) viewportEl?.appendChild(frame); } else frame.remove();
+    referencePanel.show(viewer.lookThrough ? viewportEl : null);
   }
   function paintScale(): void {
     const ok = heightPresetsState(store.get()).enabled;
@@ -164,6 +169,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore):
 
   return {
     root,
+    reference: () => referencePanel.reference(),
     setActive(on, viewport) {
       active = on;
       if (on) {
