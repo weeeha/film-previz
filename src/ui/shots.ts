@@ -1,6 +1,7 @@
 import type { Session } from "../model/session";
 import { SIZE_LABELS, type Shot, type SizeLabel } from "../model/types";
 import { heightText, lensLabel, sensorLabel } from "../model/shotRecord";
+import { buildExportZip, exportFolderName, exportZipName, type ExportFrame } from "../export/zip";
 import { el } from "./dom";
 
 export type Shots = {
@@ -51,6 +52,8 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
   let undo: Undo | null = null;
   let active = false;
   let busy = false;
+  type ExportState = { kind: "idle" } | { kind: "exporting"; done: number; total: number } | { kind: "exported"; count: number; file: string } | { kind: "error"; message: string };
+  let exportState: ExportState = { kind: "idle" };
 
   const count = el("p", { className: "meta", id: "shot-count-head" });
   const head = el("div", { className: "page-head" }, el("h1", {}, "Shots"), count);
@@ -73,7 +76,7 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
   async function run(fn: () => Promise<void>): Promise<void> {
     if (busy) return;
     busy = true;
-    try { await fn(); await session.refresh(); } catch (e) { console.error(e); } finally { busy = false; }
+    try { await fn(); if (exportState.kind !== "exporting") exportState = { kind: "idle" }; await session.refresh(); } catch (e) { console.error(e); } finally { busy = false; }
   }
 
   // ----- actions -----
@@ -190,41 +193,100 @@ export function createShots(session: Session, onOpen: (shot: Shot) => void): Sho
     return tr;
   }
 
+  function download(bytes: Uint8Array, file: string): void {
+    const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/zip" }));
+    const a = el("a", { href: url, download: file });
+    a.style.display = "none";
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
+
+  /** Read every frame, zip, and hand the zip to the browser. One zip, no File System Access API, so Safari works. */
+  async function exportZip(): Promise<void> {
+    const scene = session.scene();
+    const list = session.shots();
+    if (!scene || !list.length || exportState.kind === "exporting") return;
+    exportState = { kind: "exporting", done: 0, total: list.length };
+    paintExport(list);
+    try {
+      const db = await store();
+      const frames: ExportFrame[] = [];
+      for (const shot of list) {
+        const blob = await db.getFrame(shot.sceneId, shot.id);
+        if (!blob) throw new Error(`Shot ${shot.number} has no stored frame.`);
+        frames.push({ shot, bytes: new Uint8Array(await blob.arrayBuffer()) });
+        exportState = { kind: "exporting", done: frames.length, total: list.length };
+        paintExport(list);
+        await new Promise((r) => setTimeout(r, 0)); // let the progress bar draw
+      }
+      const file = exportZipName(scene);
+      download(buildExportZip(scene, frames), file);
+      exportState = { kind: "exported", count: list.length, file };
+    } catch (e) {
+      console.error(e);
+      exportState = { kind: "error", message: e instanceof Error ? e.message : String(e) };
+    }
+    paintExport(session.shots());
+  }
+
   const plural = (n: number) => `${n} ${n === 1 ? "shot" : "shots"}`;
 
   function paintExport(list: Shot[]): void {
     const scene = session.scene();
     const name = scene?.name ?? "the scene";
-    const slug = (scene?.name ?? "scene").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "scene";
+    const folder = scene ? exportFolderName(scene) : "scene-previz";
     const unverified = list.filter((s) => !s.scaleConfirmed).length;
     const last = String(Math.max(0, ...list.map((s) => Number(/(\d+)$/.exec(s.id)?.[1] ?? 0)))).padStart(3, "0");
-    const btn = el("button", { className: list.length ? "btn btn-primary" : "btn", type: "button", id: "export-btn", disabled: true }, "Export shot list");
+    const st = exportState;
+    const exporting = st.kind === "exporting";
+    const btn = el("button", { className: list.length ? "btn btn-primary" : "btn", type: "button", id: "export-btn", disabled: !list.length || exporting }, exporting ? "Exporting" : "Export shot list");
+    btn.addEventListener("click", () => { void exportZip(); });
     const parts: Node[] = [
       el("h2", { id: "h-export" }, "Export"),
       el("p", { className: "meta" }, list.length ? `${plural(list.length)} from ${name}. One zip download.` : "Nothing to export yet."),
     ];
     if (unverified) {
       const n = el("div", { className: "notice warn" },
-        el("p", {}, el("strong", {}, "Heights unverified."), ` ${unverified} of ${list.length} shots were saved before the scale was confirmed. shot-list.md says "heights unverified" for them.`),
+        el("p", {}, el("strong", {}, "Heights unverified."), ` ${unverified} of ${list.length} shots were saved before the scale was confirmed. shot-list.md says "height unverified" for them.`),
         el("p", {}, el("a", { href: "#/" }, "Set scale"), " and update those shots to fix this."),
       );
       n.setAttribute("role", "status");
       parts.push(n);
     }
+    if (st.kind === "exported") {
+      const n = el("div", { className: "notice", id: "export-done" },
+        el("p", {}, el("strong", {}, `${plural(st.count)} exported.`), " Your browser saved ", el("span", { className: "mono" }, st.file), "."),
+      );
+      n.setAttribute("role", "status");
+      parts.push(n);
+    }
+    if (st.kind === "error") {
+      const n = el("div", { className: "notice warn", id: "export-error" }, el("p", {}, el("strong", {}, "Export failed."), ` ${st.message}`));
+      n.setAttribute("role", "alert");
+      parts.push(n);
+    }
+    if (st.kind === "exporting") {
+      const bar = el("progress", { value: st.done, max: st.total });
+      bar.setAttribute("aria-label", "Frames added to the zip");
+      const n = el("div", { id: "export-progress" }, el("p", { className: "meta" }, `Zipping frames: ${st.done} of ${st.total}.`), bar);
+      n.setAttribute("role", "status");
+      parts.push(n);
+    }
     parts.push(el("div", {}, btn,
-      el("p", { className: "hint", id: "export-later", style: S("margin-top:var(--s2)") }, "Export arrives in the next step."),
-      el("p", { className: "hint", style: S("margin-top:var(--s1)") }, "Scene files are never included. Nothing leaves this computer."),
+      el("p", { className: "hint", style: S("margin-top:var(--s2)") }, "Scene files are never included. Nothing leaves this computer."),
     ));
     const li = (file: string, hint: string) => el("li", {}, el("span", { className: "mono" }, file), el("span", { className: "hint" }, hint));
     parts.push(el("div", {},
       el("h3", { style: S("margin-bottom:var(--s2)") }, "Folder contents"),
-      el("p", { className: "mono", style: S("margin-bottom:var(--s2)") }, `${slug}-previz/`),
+      el("p", { className: "mono", style: S("margin-bottom:var(--s2)") }, `${folder}/`),
       el("ul", { className: "files" },
         li("shots.json", "Full records of every shot."),
         li("shot-list.md", "Table with the film-craft shot list columns."),
         li("location-sheet.md", "Filled from the scene record."),
         li("frames/shot-001.jpg", list.length ? `One frame per shot, up to shot-${last}.jpg. Exact aspect, no interface.` : "One frame per shot. Exact aspect, no interface."),
-        li("floor-plan.png", "Top-down view with numbered cameras."),
+        li("floor-plan.png", "Not included yet. Top-down view with numbered cameras arrives with stand-ins."),
         li("scene-ref.json", "Scene name, file name, SHA-256 and scale source. No scene data."),
       ),
     ));

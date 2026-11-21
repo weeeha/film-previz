@@ -220,8 +220,7 @@ test("shots_view_save_edit_reorder_duplicate_delete_undo_and_open", async ({ pag
   await expect(rows.nth(0).locator("td").nth(5).locator("select")).toHaveValue("WS");
   await expect(rows.nth(0).locator("td").nth(6)).toHaveText("Job Entrance");
   expect(await rows.nth(0).locator("img").evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true);
-  await expect(page.locator("#export-btn")).toBeDisabled();
-  await expect(page.locator("#export-later")).toHaveText("Export arrives in the next step.");
+  await expect(page.locator("#export-btn")).toBeEnabled();
   await expect(page.locator("#export")).toContainText("3 shots from tiny");
   await expect(page.locator("#export .notice.warn")).toContainText("3 of 3 shots were saved before the scale was confirmed");
 
