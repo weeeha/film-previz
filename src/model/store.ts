@@ -66,6 +66,16 @@ export type Store = {
 export const sceneIdForHash = (sha256: string): string => `scene-${sha256.slice(0, 12)}`;
 export const shotIdForNumber = (n: number): string => `shot-${String(n).padStart(3, "0")}`;
 
+/**
+ * The next id to hand out. Ids are never reused: after a delete the later shots are renumbered but keep their ids,
+ * so the next id comes from the largest id suffix as well as the largest number.
+ */
+export function nextShotIdFor(shots: Array<Pick<Shot, "id" | "number">>): { number: number; id: string } {
+  const number = Math.max(0, ...shots.map((s) => s.number)) + 1;
+  const suffix = Math.max(0, ...shots.map((s) => Number(/(\d+)$/.exec(s.id)?.[1] ?? 0)));
+  return { number, id: shotIdForNumber(Math.max(number, suffix + 1)) };
+}
+
 const fileFormat = (name: string): Scene["file"]["format"] => (name.toLowerCase().endsWith(".ply") ? "ply" : "spz");
 
 type Pending = { hash: string; scale: SceneScale; figureXZ: FigureXZ };
@@ -83,6 +93,17 @@ function done(tx: IDBTransaction): Promise<void> {
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error ?? new Error("transaction aborted"));
   });
+}
+
+/**
+ * A frame goes into IndexedDB as its type and bytes, not as a Blob: WebKit with an ephemeral profile
+ * (the Playwright one, and Safari private windows) refuses to store a Blob and fails the transaction with no error.
+ */
+type StoredFrame = { type: string; bytes: ArrayBuffer };
+async function packFrame(blob: Blob): Promise<StoredFrame> { return { type: blob.type, bytes: await blob.arrayBuffer() }; }
+function unpackFrame(v: StoredFrame | Blob | undefined): Blob | null {
+  if (!v) return null;
+  return v instanceof Blob ? v : new Blob([v.bytes], { type: v.type });
 }
 
 function upgrade(db: IDBDatabase): void {
@@ -156,6 +177,7 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
 
     async saveShot(shot, frame) {
       failIfInvalid("Shot", validateShot(shot));
+      const packed = frame ? await packFrame(frame) : null; // before the transaction opens, which would not wait for it
       const tx = db.transaction(["scenes", "shots", "frames"], "readwrite");
       const fin = done(tx);
       const scene = await req(tx.objectStore("scenes").get(shot.sceneId));
@@ -165,7 +187,7 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
         throw new Error(`No scene ${shot.sceneId} to attach the shot to.`);
       }
       tx.objectStore("shots").put(shot);
-      if (frame) tx.objectStore("frames").put(frame, [shot.sceneId, shot.id]);
+      if (packed) tx.objectStore("frames").put(packed, [shot.sceneId, shot.id]);
       await fin;
     },
 
@@ -209,8 +231,7 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
         throw new Error(`No shot ${id} in scene ${sceneId}.`);
       }
       const all = await getAllShots(tx, sceneId);
-      const number = Math.max(0, ...all.map((s) => s.number)) + 1;
-      const newId = shotIdForNumber(number);
+      const { number, id: newId } = nextShotIdFor(all);
       const now = new Date().toISOString();
       const copy: Shot = {
         ...structuredClone(src),
@@ -221,7 +242,7 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
         createdAt: now,
         updatedAt: now,
       };
-      const frame = await req(tx.objectStore("frames").get([sceneId, id]) as IDBRequest<Blob | undefined>);
+      const frame = await req(tx.objectStore("frames").get([sceneId, id]) as IDBRequest<StoredFrame | Blob | undefined>);
       tx.objectStore("shots").put(copy);
       if (frame) tx.objectStore("frames").put(frame, [sceneId, newId]);
       await fin;
@@ -236,6 +257,7 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
     },
 
     async saveFrame(sceneId, shotId, frame) {
+      const packed = await packFrame(frame);
       const tx = db.transaction(["shots", "frames"], "readwrite");
       const fin = done(tx);
       const shot = await req(tx.objectStore("shots").getKey([sceneId, shotId]));
@@ -244,13 +266,12 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
         await fin.catch(() => undefined);
         throw new Error(`No shot ${shotId} in scene ${sceneId} to attach the frame to.`);
       }
-      tx.objectStore("frames").put(frame, [sceneId, shotId]);
+      tx.objectStore("frames").put(packed, [sceneId, shotId]);
       await fin;
     },
 
     async getFrame(sceneId, shotId) {
-      const r = await req(db.transaction("frames").objectStore("frames").get([sceneId, shotId]) as IDBRequest<Blob | undefined>);
-      return r ?? null;
+      return unpackFrame(await req(db.transaction("frames").objectStore("frames").get([sceneId, shotId]) as IDBRequest<StoredFrame | Blob | undefined>));
     },
 
     async nextShotNumber(sceneId) {
@@ -259,8 +280,7 @@ export async function openStore(factory: IDBFactory = indexedDB, name: string = 
     },
 
     async nextShotId(sceneId) {
-      const number = await store.nextShotNumber(sceneId);
-      return { number, id: shotIdForNumber(number) };
+      return nextShotIdFor(await getAllShots(db.transaction("shots"), sceneId));
     },
 
     async openSceneFile(file, forSceneId) {

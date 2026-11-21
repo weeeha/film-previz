@@ -20,7 +20,7 @@ function fileField(id: string, label: string, accept: string): { wrap: HTMLEleme
  * The Scenes route for now: the two file inputs, the load status, a preview of the viewport so marking
  * has a surface to click on, and the scale panel. The full Scenes view from the draft comes in a later task.
  */
-export function createScenes(viewer: Viewer, panel: ScalePanel, onSceneName: (name: string) => void): Scenes {
+export function createScenes(viewer: Viewer, panel: ScalePanel, onSceneName: (name: string) => void, onSceneRecord: (sceneId: string | null) => void = () => {}): Scenes {
   const splatField = fileField("splat-file", "Scene file (SPZ or PLY)", ".spz,.ply,.splat,.ksplat,.sog");
   const colliderField = fileField("collider-file", "Collider mesh (GLB)", ".glb,.gltf");
   const fields = el("div", { className: "fields two" }, splatField.wrap, colliderField.wrap);
@@ -33,13 +33,17 @@ export function createScenes(viewer: Viewer, panel: ScalePanel, onSceneName: (na
   const openSplat = async (f: File): Promise<number> => {
     const sha256 = await sha256Hex(f);
     // Match the file to its scene record by hash, or make the record, so the scale has somewhere to be kept.
+    let sceneId: string | null = null;
     try {
       const store = await appStore();
       const opened = await store.openSceneFile({ name: f.name, bytes: f.size, sha256 });
       if (opened.kind === "new") await store.saveScene(opened.draft);
+      sceneId = opened.kind === "new" ? opened.draft.id : opened.scene.id;
     } catch (e) { console.warn("could not open the scene record", e); }
     await panel.setScene(sha256);
-    return viewer.loadSplat(f);
+    const n = await viewer.loadSplat(f);
+    onSceneRecord(sceneId); // its shots re-attach by the file's hash
+    return n;
   };
   const loaded = (name: string, n: number) => {
     status.textContent = `${name}: ${n} splats`;

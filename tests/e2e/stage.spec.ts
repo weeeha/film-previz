@@ -37,9 +37,11 @@ test("stage_lens_readout_matches_the_draft_and_presets_are_off_without_scale", a
   // free focal length
   await page.fill("#f-free", "40");
   await expect(page.locator("#readout")).toContainText("40 mm on 24.89 mm");
-  // Save frame is the single filled control
+  // Save shot is the single filled control, Save frame stays a plain secondary action
   await expect(page.locator(".btn-primary")).toHaveCount(1);
+  await expect(page.locator("#save-shot")).toHaveText("Save shot");
   await expect(page.locator("#save-frame")).toHaveText("Save frame");
+  await expect(page.locator("#save-frame")).not.toHaveClass(/btn-primary/);
 });
 
 test("stage_camera_fields_drive_the_shot_camera_and_heading_wraps", async ({ page }) => {

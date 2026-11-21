@@ -520,3 +520,18 @@ main[data-route="/stage"] { overflow: hidden; }
 .viewport:focus-visible { outline-offset: -2px; }
 .preview-slot .viewport { height: min(46vh, 420px); min-height: 260px; border: 1px solid var(--line); border-radius: var(--r); }
 .insp-foot .row { align-items: center; }
+
+/* ---------- shots: real frames, row editing ---------- */
+.thumb img, .strip .shot .t img { width: min(100%, calc(50px * var(--ar))); height: auto; aspect-ratio: var(--ar); display: block; border-radius: 2px; object-fit: cover; background: var(--vp-bg); }
+.strip .shot .t img { width: min(100%, calc(54px * var(--ar))); }
+button.thumb { appearance: none; background: none; border: 0; padding: 0; cursor: pointer; border-radius: var(--r); }
+button.thumb:hover img { outline: 2px solid var(--line-strong); outline-offset: 1px; }
+.ed { border-radius: var(--r); }
+.ed:hover { outline: 1px solid var(--line-strong); outline-offset: 3px; }
+.ed:focus { display: block; overflow: visible; outline: 2px solid var(--focus); outline-offset: 3px; }
+.ed.clamp { max-width: 260px; }
+.size-edit { min-height: 28px; padding: 0 var(--s1); }
+.insp-foot .row { flex-wrap: wrap; }
+.strip .shot span.wrap { white-space: normal; }
+.size-edit { min-width: 0; width: 66px; }
+.shots-table .ed.clamp { min-width: 11ch; }

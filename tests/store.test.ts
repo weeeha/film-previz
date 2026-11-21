@@ -53,6 +53,18 @@ describe("scenes and shots", () => {
     expect(await store.nextShotId(a.id)).toEqual({ number: 3, id: "shot-003" });
   });
 
+  it("never reuses a shot id after a delete and renumber", async () => {
+    const a = makeScene();
+    await store.saveScene(a);
+    for (const n of [1, 2, 3]) await store.saveShot(makeShot(a.id, n));
+    await store.deleteShot(a.id, "shot-002");
+    await store.reorderShots(a.id, ["shot-001", "shot-003"]); // numbers 1 and 2, ids 001 and 003
+    expect(await store.nextShotId(a.id)).toEqual({ number: 3, id: "shot-004" });
+    const copy = await store.duplicateShot(a.id, "shot-001");
+    expect([copy.id, copy.number]).toEqual(["shot-004", 3]);
+    expect((await store.listShots(a.id)).length).toBe(3);
+  });
+
   it("keeps the frame blob apart from the shot record", async () => {
     const a = makeScene();
     await store.saveScene(a);
