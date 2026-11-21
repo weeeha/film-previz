@@ -2,7 +2,9 @@
 
 ## Approvals
 
-TBD
+- 2026-11-20: no spend. Task 2 option 2 was taken as the default by the build session, because the budget is $0 and no paid step may be taken without the owner. This is not an owner approval. The owner still has to choose between option 1 (one month of Marble Standard, price to be read from the live pricing page first) and staying on the stand-in.
+- Stand-in used by tasks 3 and 4: the synthetic set from `spike/make-sample-set.mjs` (see Set). No file was downloaded, so there is no licence to confirm.
+- No Marble world was generated, no export was made, no API call was made. Marble plan and credit prices remain unread.
 
 ## Set
 
@@ -26,7 +28,7 @@ The SPZ files were written by Spark's own `transcodeSpz` from the PLY, which run
 
 Machine: Mac Studio M2 Max, 64 GB. Scene: the synthetic set above, PLY. Each run loads the file fresh from the Vite dev server on localhost, then orbits slowly inside the room for 10 s. Columns: file read (fetch plus arrayBuffer), parse (Spark initialised, splats uploaded), first frame with splat pixels (from the start of the fetch), fps averaged over the last 5 s of the orbit. Viewport 800 by 600, pixel ratio 1. Raw per-run lines: `out/phase-0-timings.jsonl` (git-ignored).
 
-Engines used here, labelled as they are: Playwright Chromium 1248 (headless, ANGLE Metal on the M2 Max GPU) and Playwright WebKit 2370 (headless, Apple GPU). Playwright WebKit is not Safari. Chrome and Safari proper are not run yet.
+Engines used here, labelled as they are: Playwright Chromium 1248 (headless, ANGLE Metal on the M2 Max GPU) and Playwright WebKit 2370 (headless, Apple GPU). Playwright WebKit is not Safari. Chrome 157 and Safari 26.6.2 proper were run on 2026-11-21 in a visible window, at the window size the browser opened with (not 800 by 600). Six lines in the raw file tagged `google-chrome` came from a headless Chrome and are not in this table.
 
 | File | Browser | Run | Read ms | Parse ms | First frame ms | fps last 5 s |
 |---|---|---|---|---|---|---|
@@ -42,10 +44,18 @@ Engines used here, labelled as they are: Playwright Chromium 1248 (headless, ANG
 | 500k PLY | Playwright WebKit | 1 | 60 | 78 | 192 | 59.6 |
 | 500k PLY | Playwright WebKit | 2 | 42 | 82 | 169 | 60 |
 | 500k PLY | Playwright WebKit | 3 | 100 | 98 | 252 | 60 |
-| 2M PLY | Chrome | 1 to 3 | pending controller run | | | |
-| 500k PLY | Chrome | 1 to 3 | pending controller run | | | |
-| 2M PLY | Safari | 1 to 3 | pending controller run | | | |
-| 500k PLY | Safari | 1 to 3 | pending controller run | | | |
+| 2M PLY | Chrome 157 | 1 | 329 | 309 | 780 | 60 |
+| 2M PLY | Chrome 157 | 2 | 285 | 340 | 718 | 60 |
+| 2M PLY | Chrome 157 | 3 | 190 | 315 | 612 | 60 |
+| 500k PLY | Chrome 157 | 1 | 52 | 79 | 192 | 59.6 |
+| 500k PLY | Chrome 157 | 2 | 69 | 88 | 222 | 58 |
+| 500k PLY | Chrome 157 | 3 | 277 | 98 | 462 | 58.4 |
+| 2M PLY | Safari 26.6.2 | 1 | 368 | 299 | 844 | 59 |
+| 2M PLY | Safari 26.6.2 | 2 | 216 | 290 | 606 | 58.8 |
+| 2M PLY | Safari 26.6.2 | 3 | 172 | 286 | 565 | 58.8 |
+| 500k PLY | Safari 26.6.2 | 1 | 83 | 84 | 226 | 58.6 |
+| 500k PLY | Safari 26.6.2 | 2 | 45 | 84 | 179 | 59.2 |
+| 500k PLY | Safari 26.6.2 | 3 | 56 | 89 | 201 | 59 |
 
 One run each on SPZ, Playwright Chromium: 2M SPZ read 34 ms, parse 310 ms, first frame 442 ms, 60 fps. 500k SPZ read 27 ms, parse 94 ms, first frame 175 ms, 60 fps. Single runs, not the three the brief asks for.
 
@@ -79,7 +89,7 @@ Checked by number, on the data after the rotation (`axesReport` in `spike/main.j
 
 The SPZ files give the same box and the same F result.
 
-Not checked yet: Chrome and Safari proper (pending controller run). The collider GLB is now loaded in the viewer and drawn as a wireframe over the splat (see Scale).
+Chrome 157 and Safari 26.6.2 proper passed the same axes checks by number in all 12 runs. The by-eye check in those two browsers is not done. The collider GLB is now loaded in the viewer and drawn as a wireframe over the splat (see Scale).
 
 ## Scale
 
@@ -153,4 +163,25 @@ The worst real mismatch of 1 mm is sampling and storage precision, not a fit err
 
 ## Decision
 
-TBD
+Status of each item the spec lists as unverified:
+
+| Item | Result |
+|---|---|
+| three.js minimum version for Spark | Measured. Spark 2.4.0 declares the peer range `>=0.180.0`. three 0.180.0 renders PLY and SPZ in Chrome 157 and Safari 26.6.2. |
+| Spark raycasting against splats | Measured on the synthetic set. `SplatMesh.raycast` exists in 2.4.0. Hits land 1 to 3 cm in front of the surface at 2M splats and 2 to 5 cm at 500k, with one miss at 500k. A ray costs about 23 ms at 500k and 95 ms at 2M. |
+| Accuracy of Marble `metric_scale_factor` | Still unverified. API route not tested (cost gate). |
+| Whether the web app export carries scale metadata | Still unverified. No Marble export exists. |
+| Load time, frame rate and splat defects of a real Marble export | Still unverified. The synthetic set meets the proposed thresholds with a wide margin, which says nothing about a real scan. |
+| Collider mesh fit on a real export | Still unverified. |
+| Marble plan and API credit prices | Still unverified. Not read. |
+
+Caching the scene in IndexedDB (spec decision 12): do not cache in v1. Re-opening from disk costs under a second here (2M splats: 8.4 MB as SPZ, 112 MB as PLY). Prefer SPZ. Revisit only if a real export loads slowly.
+
+Collider or splat for picking (spec decision 2): the decision stands. The collider gave exact hits. Splat picking works and can serve as a fallback when an export has no collider, with a bias toward the camera of a few centimetres.
+
+Open for the owner (task 5 step 4), recommended first:
+1. Go to phase 1 on the stand-in set, and decide the Marble spend when the real-input test (task 14) comes up.
+2. Approve the Marble Standard month now, so phase 0 is rerun on a real export before any app code.
+3. Stop here.
+
+The build session took option 1 as far as the HTML draft, which is free and is the next owner gate anyway. The owner has not replied yet.
