@@ -40,4 +40,12 @@ Open question, not acted on: whether any video tool the owner uses accepts the e
 - **The move stick also strafes (left and right along the head's side).** Reason: the brief fixes only forward movement, and a stick has two axes; strafing is the usual default and costs nothing.
 - **Shots placed in VR carry no reference photo and only a name ("From headset N").** Reason: the job, notes and reference belong to the shot being edited on the Stage, not to a pose placed from the headset.
 
-(more lines are added as tasks land)
+- **Saving placed shots reports failures through a callback, and throws an AggregateError after trying every pose when no callback is given.** Reason: one failed save must not drop the rest, and the error must not be swallowed.
+- **Dev builds expose `window.__xrSession` so a test can stand in for the headset.** Reason: Chromium and WebKit here have no immersive session, and the Stage's save path after a session is otherwise untestable.
+
+## Postponed
+
+- Quest Browser run: scene loads, door at 2.0 m looks 2.0 m tall, frame rates for the 500k and the 2M file, thumbstick feel, comfort. Needs the Quest 3 headset and the owner (checklist in `notes/xr-results.md`).
+- Tape-measured eye height against a shot placed at the door (within 0.05 m). Needs the headset, a tape and the owner.
+- Whether the frame grab on the Stage matches what the user saw in the headset. Needs the headset and the owner.
+

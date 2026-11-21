@@ -14,6 +14,8 @@ import { createStandInSet } from "../model/standIns";
 import { createStandInsPanel } from "./standIns";
 import { createMovesPanel } from "./moves";
 import { createXrButton } from "./xrButton";
+import type { XrSessionHandle } from "../xr/xr";
+import { createPlacementQueue, poseFromHeadset, savePlacedShots, type PlacedPose } from "../xr/place";
 import { el, labelled } from "./dom";
 
 export const FRAME_GRAB_WIDTH_PX = 1920;
@@ -41,7 +43,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   const through = el("input", { type: "checkbox", id: "through", checked: true });
   const maskText = el("span", { className: "meta", id: "mask-text" });
   const walkHint = el("span", { className: "meta spacer", id: "vp-hint" });
-  const xrButton = createXrButton(viewer, () => heightPresetsState(store.get()).enabled, () => { /* shots placed from the headset: task 26 */ });
+  const xrButton = createXrButton(viewer, () => heightPresetsState(store.get()).enabled, (h) => onXrSession(h));
   const bar = el("div", { className: "stage-bar" },
     el("h1", {}, "Stage"),
     el("label", { className: "switch" }, through, " Look through shot camera"),
@@ -215,6 +217,7 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
     const sc = session.scene();
     if (!sc) { say("Open a scene on Scenes to save shots."); return; }
     if (movesPanel.isPreviewing()) { say("Stop the move preview before saving."); return; }
+    if (xrActive) { say("End the VR session before saving."); return; }
     const prev = mode === "update" ? editingShot() : null;
     for (const b of [primaryBtn, asNewBtn, saveBtn]) b.disabled = true;
     delete saveMsg.dataset.note;
@@ -264,9 +267,73 @@ export function createStage(viewer: Viewer, shot: ShotState, store: ScaleStore, 
   primaryBtn.addEventListener("click", () => { void saveShotRecord(editingShot() ? "update" : "new"); });
   asNewBtn.addEventListener("click", () => { void saveShotRecord("new"); });
 
+  // ----- shots placed from the headset: queued in VR, saved here after the session ends -----
+  let xrActive = false;
+  async function savePlacedShot(p: PlacedPose, index: number): Promise<Shot> {
+    const sc = session.scene();
+    if (!sc) throw new Error("no scene is open");
+    shot.setPose(p.pose); // the shot camera is the only camera a grab reads
+    const g = await viewer.grabShot(FRAME_GRAB_WIDTH_PX);
+    const db = await session.store();
+    const rec = buildShot({
+      ...nextShotIdFor(await db.listShots(sc.id)),
+      sceneId: sc.id,
+      lens: { focalMm: shot.lens.focalMm, sensor: shot.lens.sensor, aspect: shot.lens.aspect },
+      pose: p.pose,
+      move: { kind: "static", durationS: null, ease: null, endPose: null },
+      endFrame: null,
+      standIns: standInSet.list(),
+      scaleConfirmed: heightPresetsState(store.get()).enabled,
+      frame: { widthPx: g.widthPx, heightPx: g.heightPx },
+      referencePhoto: null,
+      details: { name: `From headset ${index + 1}`, sizeLabel: null, job: "", action: "", notes: "" },
+    });
+    rec.heightAboveGroundM = p.heightAboveGroundM;
+    await db.saveShot(rec, g.blob);
+    return rec;
+  }
+  if (import.meta.env.DEV) (window as unknown as { __xrSession: (h: XrSessionHandle) => void }).__xrSession = (h) => onXrSession(h); // lets a test stand in for the headset
+  function onXrSession(h: XrSessionHandle): void {
+    const queue = createPlacementQueue();
+    xrActive = true;
+    h.onSelect((head) => {
+      queue.add({ pose: poseFromHeadset(head.position, head.quaternion, shot.frontHeadingDeg()), heightAboveGroundM: head.position[1] });
+    });
+    h.onEnd(() => { void afterXr(queue.drain()); });
+  }
+  async function afterXr(placed: PlacedPose[]): Promise<void> {
+    const workingPose = { ...shot.pose, positionM: [...shot.pose.positionM] as [number, number, number] };
+    const editing = session.editingId();
+    const failures: string[] = [];
+    let saved: Shot[] = [];
+    if (placed.length) {
+      for (const b of [primaryBtn, asNewBtn, saveBtn]) b.disabled = true;
+      delete saveMsg.dataset.note;
+      saveMsg.dataset.busy = "1";
+      saveMsg.textContent = `Saving ${placed.length} shot${placed.length === 1 ? "" : "s"} placed in VR`;
+      try {
+        saved = await savePlacedShots(placed, savePlacedShot, (err) => { failures.push(err instanceof Error ? err.message : String(err)); });
+        await session.refresh();
+      } finally {
+        delete saveMsg.dataset.busy;
+        shot.setPose(workingPose); // the Stage's own pose comes back
+        session.setEditing(editing);
+        xrActive = false;
+        paintFoot();
+      }
+    } else {
+      xrActive = false;
+    }
+    const n = saved.length;
+    say(`${n} shot${n === 1 ? "" : "s"} placed in VR ${n === 1 ? "was" : "were"} saved.` + (failures.length ? ` ${failures.length} could not be saved: ${failures[0]}` : ""));
+    saveMsg.dataset.xrSaved = String(n);
+    paintStrip();
+  }
+
   // ----- Save frame: one JPEG, 1920 px wide in the shot's aspect -----
   saveBtn.addEventListener("click", async () => {
     if (movesPanel.isPreviewing()) { say("Stop the move preview before saving."); return; }
+    if (xrActive) { say("End the VR session before saving."); return; }
     saveBtn.disabled = true;
     delete saveMsg.dataset.note;
     saveMsg.dataset.busy = "1";

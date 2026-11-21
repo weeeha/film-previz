@@ -10,7 +10,7 @@ Nothing in this file was run on a headset. No headset was available when the cod
 - `src/viewer/scene.ts`: while the renderer is presenting, the frame loop calls the session's tick and draws the walk camera (which the XR manager replaces with the headset cameras). Look-through and the walk keys do not apply. When the session ends the walk camera is taken out of the rig and gets its own pose, near, far and size back.
 - `src/ui/xrButton.ts`: the Enter VR button in the Stage bar. It does not exist in the page until the browser reports `immersive-vr` support, so a desktop browser without a headset shows the Stage as before. With support and no confirmed scale it is disabled and the line reads "Confirm the scale before entering VR. The set is shown at real size."
 - The 500k splat file is not chosen automatically. Open the file you want on Scenes. The 500k file is the suggested one for the headset until frame rates are measured.
-- Placing shots from the headset (task 26): see the section at the end.
+- Placing shots from the headset: see the last section.
 
 ## What Spark's package says about WebXR
 
@@ -39,4 +39,14 @@ In both cases the scene file has to be opened inside the Quest Browser (Scenes, 
 - [ ] Frame rate with the 2M file.
 - [ ] Thumbstick move (1.5 m/s) and snap turn (30 degrees) feel right.
 - [ ] Comfort over a few minutes of walking.
+- [ ] A shot placed standing at the door has a recorded height within 0.05 m of the user's real eye height, measured with a tape.
+- [ ] The frame grab on the Stage matches what the user saw from that spot in the headset.
 - [ ] Entering and leaving a session leaves the desktop view as it was (walk camera pose, look-through, frame grab).
+
+## Placing a shot from the headset
+
+- A trigger press (the session's `select` event) queues the head's pose: position in the world frame, heading and pitch from the head's forward vector by the convention in `src/camera/pose.ts`, roll set to 0, height above ground equal to the head's y (`local-floor`, so rig y plus head y).
+- Shots are saved after the session ends, because a frame grab needs the normal render path, which is not available inside the XR frame loop. On session end each queued pose is put on the shot camera, grabbed and saved as a new shot named "From headset 1", "From headset 2" and so on, with the lens that was on the Stage when VR started, a static move, and the Stage's current stand-ins. They carry no reference photo, job, action or notes.
+- Then the Stage's own pose is restored and the save line reads "N shots placed in VR were saved." A failed save does not stop the others; the line adds how many failed and the first reason.
+- While a session is running the Save buttons say "End the VR session before saving."
+- Tested without a headset: the pose maths and queue in `tests/xr/place.test.ts`, and the Stage's save path through a stand-in session handle in `tests/e2e/xr-place.spec.ts`. The stand-in handle replaces the browser's session, so it says nothing about what the Quest Browser sends on a trigger press.
