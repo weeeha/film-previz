@@ -9,10 +9,13 @@
   canvas { display: block; }
   #bar { position: fixed; top: 8px; left: 8px; padding: 6px 8px; background: #000a; border-radius: 4px; }
   #status { margin-left: 8px; }
+  #results { position: fixed; bottom: 8px; left: 8px; max-height: 40vh; overflow: auto; margin: 0; padding: 6px 8px; background: #000a; border-radius: 4px; font: 11px ui-monospace, monospace; }
+  #results:empty { display: none; }
 </style>
 </head>
 <body>
 <div id="bar"><input id="file" type="file" accept=".spz,.ply,.splat,.ksplat,.sog"><span id="status">empty scene</span></div>
+<pre id="results"></pre>
 <script type="module" src="./main.js"></script>
 </body>
 </html>

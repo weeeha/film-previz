@@ -21,7 +21,28 @@ const serveScenes = {
   },
 };
 
+// Dev only: POST /__results appends the JSON body as one line to out/phase-0-timings.jsonl.
+const outDir = path.join(root, "out");
+const collectResults = {
+  name: "collect-results",
+  configureServer(server) {
+    server.middlewares.use("/__results", (req, res) => {
+      if (req.method !== "POST") { res.statusCode = 405; return res.end(); }
+      let body = "";
+      req.on("data", (c) => { body += c; if (body.length > 1e6) req.destroy(); });
+      req.on("end", () => {
+        try {
+          const obj = JSON.parse(body);
+          fs.mkdirSync(outDir, { recursive: true });
+          fs.appendFileSync(path.join(outDir, "phase-0-timings.jsonl"), JSON.stringify(obj) + "\n");
+          res.statusCode = 204; res.end();
+        } catch (e) { res.statusCode = 400; res.end("bad json"); }
+      });
+    });
+  },
+};
+
 export default defineConfig({
   server: { port: 5183, strictPort: true, fs: { allow: [root] } },
-  plugins: [serveScenes],
+  plugins: [serveScenes, collectResults],
 });

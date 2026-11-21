@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build"
+    "build": "vite build",
+    "make-set": "node make-sample-set.mjs"
   },
   "dependencies": {
     "@sparkjsdev/spark": "^2.4.0",
