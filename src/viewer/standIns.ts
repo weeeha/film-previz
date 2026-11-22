@@ -43,7 +43,7 @@ function labelTexture(text: string): THREE.CanvasTexture {
 export class StandInFigures {
   private readonly entries = new Map<string, Entry>();
   private readonly group = new THREE.Group();
-  private readonly bodyMat = new THREE.MeshBasicMaterial({ color: FIGURE_GREY });
+  private readonly bodyMat = new THREE.MeshLambertMaterial({ color: FIGURE_GREY });
   private readonly arrowMat = new THREE.MeshBasicMaterial({ color: FIGURE_GREY, side: THREE.DoubleSide });
   private readonly ringMat = new THREE.MeshBasicMaterial({ color: 0x86adff, side: THREE.DoubleSide, depthTest: false, transparent: true });
   private readonly arrowGeo = arrowGeometry();
@@ -51,6 +51,13 @@ export class StandInFigures {
 
   constructor(private readonly scene: THREE.Scene, private readonly helperLayer: number) {
     this.group.name = "stand-ins";
+    // Fixed world-space lights, so the figure shades the same in the Stage and in the frame grab (both render this scene).
+    // Every other material in the scene is unlit, so these lights touch only the figures. A side of the body facing
+    // the camera comes out a little darker than FIGURE_GREY and the top and the lit side a little lighter.
+    const fill = new THREE.HemisphereLight(0xffffff, 0x6a6e75, 2);
+    const key = new THREE.DirectionalLight(0xffffff, 1.2);
+    key.position.set(-0.6, 1, 0.8);
+    this.group.add(fill, key);
     scene.add(this.group);
   }
 

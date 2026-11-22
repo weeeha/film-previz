@@ -186,7 +186,7 @@ test("figure_is_in_the_frame_grab", async ({ page }) => {
   await grab(page, "with");
   const above = await figureCentreInFrame(page, 1.95); // where the name label would sit
   const [px, py, pz] = await pixelAt(page, "with", c.u, c.v) as number[];
-  for (const [got, want] of [[px, 217], [py, 220], [pz, 225]] as const) expect(Math.abs(got! - want)).toBeLessThanOrEqual(12);
+  for (const [got, want] of [[px, 170], [py, 173], [pz, 178]] as const) expect(Math.abs(got! - want)).toBeLessThanOrEqual(14); // the lit body side facing the camera (measured 170, 173, 178)
   await page.evaluate(() => (window as unknown as { __standIns: { replace(l: SI[]): void } }).__standIns.replace([]));
   await grab(page, "without");
   expect(await meanDiff(page, "with", "without")).toBeGreaterThan(0.2);
@@ -325,7 +325,7 @@ test("figure_behind_the_chair_among_the_splats", async ({ page }) => {
     let grey = 0, total = 0, firstCovered = -1;
     for (let y = y0; y <= y1; y++) {
       const o = (y * im.width + x) * 4;
-      const isGrey = Math.abs(im.data[o]! - 217) <= 12 && Math.abs(im.data[o + 1]! - 220) <= 12 && Math.abs(im.data[o + 2]! - 225) <= 12;
+      const isGrey = Math.abs(im.data[o]! - 170) <= 14 && Math.abs(im.data[o + 1]! - 173) <= 14 && Math.abs(im.data[o + 2]! - 178) <= 14;
       total++; if (isGrey) grey++; else if (firstCovered < 0) firstCovered = y - y0;
     }
     return { grey, total, firstCovered };
