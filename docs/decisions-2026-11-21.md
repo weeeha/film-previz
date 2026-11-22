@@ -51,13 +51,17 @@ Open question, not acted on: whether any video tool the owner uses accepts the e
 - A real Marble export, the Marble cost gate (task 2) and the real-input test with the owner's photo (task 14, criteria 1 and 15). Needs a paid Marble plan and the owner's photo.
 - A Vercel preview (task 20). Needs the owner's yes and his choice of team.
 - The app in desktop Safari by hand. WebKit ran through Playwright only. Needs someone at the Mac.
-- The phase 4 and 5 interface audit: `unslop` review, a states walk with screenshots in both themes, and bringing `tests/audit/states-walk.mjs` up to the current markup. Non-blocking; needs one working session.
+- The phase 4 and 5 interface audit: `unslop` review and a states walk read in both browsers and themes. The script itself runs again (see the second pass); only the Chromium light pass was rerun, so the other three passes and the review of the screenshots are still to do.
 - The owner's word on whether the floor plan drawing is usable for film-craft's 180 degree line check. Needs the owner.
-- A second "Add stand-in" lands on the same spot as the first, 3 m ahead of the camera, so the two overlap until one is moved. Non-blocking fix: offset each new figure sideways.
-- Stand-ins are flat unlit grey with no shading, so a figure reads as a silhouette. Non-blocking: add simple shading that stays the same in the frame grab.
-- A pan is limited to 179 degrees because the heading takes the short way round. Non-blocking.
-- A shot saved between the two camera move commits has no end frame until it is saved again. Only matters for test data.
+- A pan is limited to 179 degrees because the heading takes the short way round. Checked in the second pass and left: a saved move stores only the wrapped end heading, so a 270 degree pan right and a 90 degree pan left are the same record. Allowing the long way needs a format change (a stored signed amount).
 - No switch to leave stand-ins out of the frame grab for a clean start image. Needs the owner's call on whether he wants it.
-- The chromium test "a splat file chosen in the file input renders splats" and a few 5 second polls time out when the machine load is above about 20. Non-blocking: rerun on an idle machine, then raise the timeouts if it still fails.
 - Whether any video tool the owner uses accepts the end frame or the camera sentence. Untested; needs the owner's tools.
 - The seven decisions in `docs/phase-4-plan.md` and the eight in the Quest brief (copied below the Quest heading by its executor where they applied) were taken without review. Needs the owner to read them once.
+
+## Fixed 2026-11-21, second pass
+
+- **Second and later "Add stand-in" no longer overlap.** Each new figure takes the first free spot beside the point 3 m ahead (right, left, 2 right, 2 left and so on, 0.9 m apart, along the camera's right-hand side). Unit tests on the placement maths. Commit: "Offset each new stand-in sideways so added figures do not overlap".
+- **Stand-ins are shaded.** Lambert material plus a fixed hemisphere light and a fixed directional light inside the scene, so the Stage and the frame grab render the same figure. Every other material in the scene is unlit, so nothing else changes. The frame grab test now expects the lit centre pixel (170, 173, 178, measured) instead of the old flat grey; it passes. Commit: "Shade stand-ins with fixed world lights ...".
+- **`tests/audit/states-walk.mjs` runs again.** Two changes: without WebGL 2 the app now sends Stage and Shots back to Scenes, and shots built through the store now need a `move` and `standIns`. The Chromium light pass ran to the end and wrote 42 screenshots to `reference/app/audit/`. Notes from it: the scene-loading collider state could not be captured (page busy), and "could not click the last strip item" for the long-content state (a script step, not looked into). Console shows only the expected corrupt-file error and GPU readback warnings. Commit: "Bring the states walk up to the current markup ...".
+- **Missing end frame on an old shot: nothing to fix.** The validator accepts a record without `endFrame` and the export reads an end frame only when the record has one, so such a shot loads and exports without one. No code change.
+- **Timeouts: nothing to raise.** The full Chromium suite passed (60 of 60) with the splat file-input test inside it, at a load of 17 to 27 during the run, so the timeouts stay as they are.
