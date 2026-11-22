@@ -3,7 +3,7 @@ import { HELPER_LAYER } from "../viewer/scene";
 import { StandInFigures } from "../viewer/standIns";
 import type { ShotState } from "../camera/shotState";
 import { wrapHeading } from "../camera/pose";
-import { standInReadout, MIN_HEIGHT_M, MAX_HEIGHT_M, type StandInSet, type FrameReadout } from "../model/standIns";
+import { standInReadout, freeStandInSpot, MIN_HEIGHT_M, MAX_HEIGHT_M, type StandInSet, type FrameReadout } from "../model/standIns";
 import type { StandIn } from "../model/types";
 import type { Session } from "../model/session";
 import { el, labelled, fmt, isFocused } from "./dom";
@@ -216,8 +216,9 @@ export function createStandInsPanel(
     if (!scaleConfirmed()) return;
     const p = shot.pose;
     const world = (p.headingDeg + shot.frontHeadingDeg()) * DEG;
-    const x = p.positionM[0] + AHEAD_M * Math.sin(world);
-    const z = p.positionM[2] - AHEAD_M * Math.cos(world);
+    const [x, z] = freeStandInSpot(
+      set.list(), [p.positionM[0] + AHEAD_M * Math.sin(world), p.positionM[2] - AHEAD_M * Math.cos(world)], p.headingDeg + shot.frontHeadingDeg(),
+    );
     const y = viewer.floorHeightAt(x, z, p.positionM[1]);
     const s = set.add([x, y, z], wrapHeading(p.headingDeg + 180)); // faces the camera
     selected = s.id;

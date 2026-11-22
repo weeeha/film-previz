@@ -56,6 +56,26 @@ export function standInReadout(
   return { state, heightPct: pct, headPct: pct * (s.headHeightM / s.heightM), distanceM };
 }
 
+/** Sideways step between figures added in a row, and the closest a new figure may land to an existing one. */
+export const STAND_IN_SPACING_M = 0.9;
+
+/**
+ * Where a new stand-in goes. `aheadXZ` is the spot straight ahead of the camera; the result is that spot or the
+ * nearest free one beside it, trying right, left, 2 right, 2 left and so on along the camera's right-hand direction.
+ * `headingDeg` is the camera's world heading.
+ */
+export function freeStandInSpot(list: Pick<StandIn, "positionM">[], ahead: [number, number], headingDeg: number): [number, number] {
+  const [ax, az] = ahead;
+  const w = headingDeg * Math.PI / 180;
+  const right: [number, number] = [Math.cos(w), Math.sin(w)];
+  for (let k = 0; k < 200; k++) {
+    const step = k === 0 ? 0 : (k % 2 === 1 ? 1 : -1) * Math.ceil(k / 2);
+    const x = ax + right[0] * step * STAND_IN_SPACING_M, z = az + right[1] * step * STAND_IN_SPACING_M;
+    if (!list.some((s) => Math.hypot(s.positionM[0] - x, s.positionM[2] - z) < STAND_IN_SPACING_M - 1e-6)) return [x, z];
+  }
+  return [ax, az];
+}
+
 const numberOf = (id: string): number => { const m = /(\d+)$/.exec(id); return m ? Number(m[1]) : 0; };
 
 /** "standin-1"; the highest number in the list plus 1. */

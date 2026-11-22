@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { standInReadout, nextStandInId, nextStandInLabel, createStandInSet } from "../src/model/standIns";
+import { standInReadout, nextStandInId, nextStandInLabel, createStandInSet, freeStandInSpot, STAND_IN_SPACING_M } from "../src/model/standIns";
 import type { CameraPose, StandIn } from "../src/model/types";
 
 const fig = (heightM: number, positionM: [number, number, number], headHeightM = 0.23): StandIn =>
@@ -66,5 +66,33 @@ describe("ids and set", () => {
     off();
     set.add([0, 0, 0], 0);
     expect(n).toBe(5);
+  });
+});
+
+describe("freeStandInSpot", () => {
+  const at = (x: number, z: number): StandIn => fig(1.75, [x, 0, z]);
+  test("keeps the spot ahead of the camera when it is free", () => {
+    expect(freeStandInSpot([], [0, -3], 0)).toEqual([0, -3]);
+  });
+  test("moves the next figure to the right, then the left, then further out", () => {
+    const first = freeStandInSpot([], [0, -3], 0);
+    const second = freeStandInSpot([at(...first)], [0, -3], 0);
+    expect(second[0]).toBeCloseTo(STAND_IN_SPACING_M, 5);
+    expect(second[1]).toBeCloseTo(-3, 5);
+    const third = freeStandInSpot([at(...first), at(...second)], [0, -3], 0);
+    expect(third[0]).toBeCloseTo(-STAND_IN_SPACING_M, 5);
+    const fourth = freeStandInSpot([at(...first), at(...second), at(...third)], [0, -3], 0);
+    expect(fourth[0]).toBeCloseTo(2 * STAND_IN_SPACING_M, 5);
+  });
+  test("follows the camera's right side when it faces another way", () => {
+    // camera heading 90 looks down +x, so its right is +z
+    const second = freeStandInSpot([at(3, 0)], [3, 0], 90);
+    expect(second[0]).toBeCloseTo(3, 5);
+    expect(second[1]).toBeCloseTo(STAND_IN_SPACING_M, 5);
+  });
+  test("skips a slot taken by a figure that was dragged there", () => {
+    const [x, z] = freeStandInSpot([at(0, -3), at(STAND_IN_SPACING_M, -3)], [0, -3], 0);
+    expect(x).toBeCloseTo(-STAND_IN_SPACING_M, 5);
+    expect(z).toBeCloseTo(-3, 5);
   });
 });
