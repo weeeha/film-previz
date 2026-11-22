@@ -118,6 +118,11 @@ async function go(page, route) {
   await page.waitForFunction((r) => location.hash === r, route);
   await sleep(500);
 }
+async function goRedirected(page, route) {
+  await page.evaluate((r) => { location.hash = r; }, route);
+  await page.waitForFunction(() => location.hash === "#/");
+  await sleep(500);
+}
 const gotoScenes = (p) => go(p, "#/");
 const gotoStage = (p) => go(p, "#/stage");
 const gotoShots = (p) => go(p, "#/shots");
@@ -241,6 +246,8 @@ async function addShots(page, items) {
         id, number, sceneId,
         lens: { focalMm: it.focal, sensor, aspect: 16 / 9 },
         pose: { positionM: [0.3 * number, it.height, -0.2 * number], headingDeg: (number * 17) % 360, pitchDeg: 0, rollDeg: 0 },
+        move: { kind: "static", durationS: null, ease: null, endPose: null },
+        standIns: number === 1 ? [{ id: "standin-1", label: "Person A", heightM: 1.75, headHeightM: 0.23, positionM: [0.3, 0, -3], headingDeg: 180 }] : [],
         scaleConfirmed: it.confirmed, frame: { widthPx: 1280, heightPx: 720 }, referencePhoto: null,
         details: { name: it.name, sizeLabel: it.size ?? null, job: it.job ?? "", action: it.action ?? "", notes: it.notes ?? "" },
       });
@@ -349,8 +356,9 @@ async function appPass(type, name, scheme) {
       await page.goto(APP + "/#/");
       await page.waitForSelector("#no-webgl", { timeout: 20000 }).catch(() => note(`${tag}: #no-webgl did not appear with webgl2 stubbed out`));
       await shot(page, "scenes-nowebgl", tag);
-      await gotoStage(page); await shot(page, "stage-nowebgl", tag);
-      await gotoShots(page); await shot(page, "shots-nowebgl", tag);
+      // Without WebGL 2 the app sends the Stage and Shots routes back to Scenes (src/main.ts), so the hash ends as "#/".
+      await goRedirected(page, "#/stage"); await shot(page, "stage-nowebgl", tag);
+      await goRedirected(page, "#/shots"); await shot(page, "shots-nowebgl", tag);
       await ctx.close();
     }
     if (flag("only-nowebgl")) return;
