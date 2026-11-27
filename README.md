@@ -4,7 +4,7 @@
 
 **Idea.** Generate a set once in World Labs Marble and walk it in the browser, where a virtual camera follows real focal length and sensor math. Each saved shot exports as a frame grab plus its camera data in a shot list.
 
-**Built.** Spec only so far: a design spec and an implementation plan (phases 0 to 5, plus an optional Quest 3 phase), and no app code. 6 commits on 2 days, Oct 27 to Oct 30, 2026.
+**Built.** A working browser tool on a synthetic test room: scene loading and scale marking, a lens-accurate shot camera, stand-ins, camera moves, a floor plan and the shot list export. Quest 3 code exists but has not run on a headset, and nothing has run on a real Marble export yet. Started with a spec and plan on Oct 27 to Oct 30, 2026; the app was built on Nov 1 and Nov 20 to 22.
 
 **Decision.** The splat is for looking and a separate collider mesh is for picking, instead of raycasting against the splat. Spark's documentation does not describe raycasting against splats (unverified), so floor and wall hits go through the invisible mesh.
 
