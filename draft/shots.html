@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shots, film-previz draft</title>
+<link rel="stylesheet" href="draft.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="room-art">
+      <rect class="r-bg" x="-3000" y="-2000" width="7600" height="4900"/>
+      <polygon class="r-ceil" points="-3000,-1674 4600,-1674 1080,290 520,290"/>
+      <polygon class="r-floor" points="-3000,2804 4600,2804 1080,570 520,570"/>
+      <polygon class="r-side" points="-3000,-1674 520,290 520,570 -3000,2804"/>
+      <polygon class="r-side" points="4600,-1674 1080,290 1080,570 4600,2804"/>
+      <rect class="r-wall" x="520" y="290" width="560" height="280"/>
+      <rect class="r-door" x="851" y="383" width="84" height="187"/>
+      <rect class="r-obj" x="628" y="528" width="56" height="42"/>
+      <g class="r-line">
+        <line x1="520" y1="570" x2="-140" y2="900"/><line x1="613" y1="570" x2="173" y2="900"/>
+        <line x1="707" y1="570" x2="487" y2="900"/><line x1="800" y1="570" x2="800" y2="900"/>
+        <line x1="893" y1="570" x2="1113" y2="900"/><line x1="987" y1="570" x2="1427" y2="900"/>
+        <line x1="1080" y1="570" x2="1740" y2="900"/>
+        <line x1="473" y1="600" x2="1127" y2="600"/><line x1="410" y1="640" x2="1190" y2="640"/>
+        <line x1="315" y1="700" x2="1285" y2="700"/><line x1="174" y1="790" x2="1426" y2="790"/>
+      </g>
+    </g>
+  </defs>
+</svg>
+
+<header class="appbar">
+  <a class="brand" href="index.html">film-previz</a>
+  <nav class="tabs" aria-label="Views">
+    <a href="index.html">Scenes</a>
+    <a href="stage.html">Stage</a>
+    <a href="shots.html" aria-current="page">Shots</a>
+  </nav>
+  <div class="scene-chip">
+    <span class="name" title="Test room, 2 m set" data-hide="long">Test room, 2 m set</span>
+    <span class="name" title="Warehouse loading dock, north wall visible, second pass with the shutters closed" data-show="long">Warehouse loading dock, north wall visible, second pass with the shutters closed</span>
+    <span class="badge ok" data-hide="unverified">Scale confirmed, door 2.00 m</span>
+    <span class="badge warn" data-show="unverified">Scale not confirmed</span>
+  </div>
+</header>
+
+<main id="main">
+<div class="page" style="max-width:none">
+
+  <div class="page-head">
+    <h1>Shots</h1>
+    <p class="meta" data-show="default exporting unverified exported">6 shots on this scene.</p>
+    <p class="meta" data-show="deleted">5 shots on this scene.</p>
+    <p class="meta" data-show="empty">0 shots on this scene.</p>
+    <p class="meta" data-show="long">40 shots on this scene.</p>
+  </div>
+
+  <div class="shots-layout">
+    <section aria-label="Saved shots">
+      <div class="empty-state" data-show="empty">
+        <h2>No shots yet</h2>
+        <p class="meta" style="max-width:62ch">Place the camera and pick a lens on the Stage, then save a shot. It is listed here with its frame, lens and height.</p>
+        <a class="btn btn-primary" href="stage.html?state=noshots">Open Stage</a>
+      </div>
+      <div class="notice" data-show="deleted" role="status" style="margin-bottom:var(--s3)">
+        <p><strong>Shot 4 deleted.</strong> The later shots moved up one number.</p>
+        <div class="actions"><button class="btn" type="button">Undo</button></div>
+      </div>
+      <div class="table-wrap" data-hide="empty" tabindex="0" role="region" aria-label="Saved shots table, scrolls sideways">
+        <table class="shots-table" id="shots-table">
+          <thead>
+            <tr>
+              <th class="num">#</th><th>Name</th><th>Frame</th><th>Lens</th><th class="num">Height</th><th>Size</th><th>Job</th><th>Decisive action</th><th>Notes</th><th><span class="sr">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody>
+          <tr>
+            <td class="num"><span class="n">1</span></td>
+            <td><div class="nm-edit" title="Entrance" contenteditable="plaintext-only" role="textbox" aria-label="Name of shot 1">Entrance</div></td>
+            <td><span class="thumb"><svg viewBox="500 250 600 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span></td>
+            <td><b>35 mm</b><br><span class="meta">Full frame, 16:9</span></td>
+            <td class="num">1.6 m</td>
+            <td>WS</td>
+            <td><span class="clamp" title="Establish the room and the door">Establish the room and the door</span></td>
+            <td><span class="clamp" title="A person opens the door and steps inside">A person opens the door and steps inside</span></td>
+            <td><span class="clamp" title="Door on the right third.">Door on the right third.</span></td>
+            <td><div class="row-actions"><button class="btn btn-icon" type="button" aria-label="Move up shot 1" title="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Move down shot 1" title="Move down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Duplicate shot 1" title="Duplicate"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg></button><button class="btn btn-icon" type="button" aria-label="Delete shot 1" title="Delete"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.5 9h6l.5-9"/></svg></button></div></td>
+          </tr>
+          <tr>
+            <td class="num"><span class="n">2</span></td>
+            <td><div class="nm-edit" title="Cross to chair" contenteditable="plaintext-only" role="textbox" aria-label="Name of shot 2">Cross to chair</div></td>
+            <td><span class="thumb"><svg viewBox="560 330 440 250" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span></td>
+            <td><b>50 mm</b><br><span class="meta">Full frame, 16:9</span></td>
+            <td class="num">1.6 m</td>
+            <td>MS</td>
+            <td><span class="clamp" title="Follow the crossing">Follow the crossing</span></td>
+            <td><span class="clamp" title="She crosses the room to the chair">She crosses the room to the chair</span></td>
+            <td><span class="clamp" title="Door stays on the right third.">Door stays on the right third.</span></td>
+            <td><div class="row-actions"><button class="btn btn-icon" type="button" aria-label="Move up shot 2" title="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Move down shot 2" title="Move down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Duplicate shot 2" title="Duplicate"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg></button><button class="btn btn-icon" type="button" aria-label="Delete shot 2" title="Delete"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.5 9h6l.5-9"/></svg></button></div></td>
+          </tr>
+          <tr>
+            <td class="num"><span class="n">3</span></td>
+            <td><div class="nm-edit" title="At the chair" contenteditable="plaintext-only" role="textbox" aria-label="Name of shot 3">At the chair</div></td>
+            <td><span class="thumb" style="--ar:1.5"><svg viewBox="560 420 260 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span></td>
+            <td><b>85 mm</b><br><span class="meta">Full frame, 3:2</span></td>
+            <td class="num">1.0 m</td>
+            <td>MCU</td>
+            <td><span class="clamp" title="Show her reaction at the chair">Show her reaction at the chair</span></td>
+            <td><span class="clamp" title="She stops and looks at the seat">She stops and looks at the seat</span></td>
+            <td></td>
+            <td><div class="row-actions"><button class="btn btn-icon" type="button" aria-label="Move up shot 3" title="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Move down shot 3" title="Move down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Duplicate shot 3" title="Duplicate"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg></button><button class="btn btn-icon" type="button" aria-label="Delete shot 3" title="Delete"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.5 9h6l.5-9"/></svg></button></div></td>
+          </tr>
+          <tr>
+            <td class="num"><span class="n">4</span></td>
+            <td><div class="nm-edit" title="Chair, low" contenteditable="plaintext-only" role="textbox" aria-label="Name of shot 4">Chair, low</div></td>
+            <td><span class="thumb" style="--ar:2.39"><svg viewBox="200 300 1200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span></td>
+            <td><b>24 mm</b><br><span class="meta">Super 35, 2.39:1</span></td>
+            <td class="num">0.3 m</td>
+            <td>WS</td>
+            <td><span class="clamp" title="Make the chair feel large">Make the chair feel large</span></td>
+            <td><span class="clamp" title="She sits down">She sits down</span></td>
+            <td><span class="clamp" title="Splat holes behind the chair. Keep the camera in front of it.">Splat holes behind the chair. Keep the camera in front of it.</span></td>
+            <td><div class="row-actions"><button class="btn btn-icon" type="button" aria-label="Move up shot 4" title="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Move down shot 4" title="Move down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Duplicate shot 4" title="Duplicate"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg></button><button class="btn btn-icon" type="button" aria-label="Delete shot 4" title="Delete"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.5 9h6l.5-9"/></svg></button></div></td>
+          </tr>
+          <tr>
+            <td class="num"><span class="n">5</span></td>
+            <td><div class="nm-edit" title="Door, inside" contenteditable="plaintext-only" role="textbox" aria-label="Name of shot 5">Door, inside</div></td>
+            <td><span class="thumb" style="--ar:1.85"><svg viewBox="0 120 1100 620" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span></td>
+            <td><b>28 mm</b><br><span class="meta">Full frame, 1.85:1</span></td>
+            <td class="num"><span data-hide="unverified">1.6 m</span><span data-show="unverified">0.64 units<br><span class="badge warn">Unverified</span></span></td>
+            <td>MS</td>
+            <td><span class="clamp" title="Show the way out">Show the way out</span></td>
+            <td><span class="clamp" title="She looks back at the door">She looks back at the door</span></td>
+            <td></td>
+            <td><div class="row-actions"><button class="btn btn-icon" type="button" aria-label="Move up shot 5" title="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Move down shot 5" title="Move down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Duplicate shot 5" title="Duplicate"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg></button><button class="btn btn-icon" type="button" aria-label="Delete shot 5" title="Delete"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.5 9h6l.5-9"/></svg></button></div></td>
+          </tr>
+          <tr>
+            <td class="num"><span class="n">6</span></td>
+            <td><div class="nm-edit" title="High corner" contenteditable="plaintext-only" role="textbox" aria-label="Name of shot 6">High corner</div></td>
+            <td><span class="thumb"><svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span></td>
+            <td><b>18 mm</b><br><span class="meta">Full frame, 16:9</span></td>
+            <td class="num"><span data-hide="unverified">2.5 m</span><span data-show="unverified">1.00 units<br><span class="badge warn">Unverified</span></span></td>
+            <td>EWS</td>
+            <td><span class="clamp" title="Show the whole room">Show the whole room</span></td>
+            <td><span class="clamp" title="She is small in the room">She is small in the room</span></td>
+            <td></td>
+            <td><div class="row-actions"><button class="btn btn-icon" type="button" aria-label="Move up shot 6" title="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Move down shot 6" title="Move down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Duplicate shot 6" title="Duplicate"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg></button><button class="btn btn-icon" type="button" aria-label="Delete shot 6" title="Delete"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.5 9h6l.5-9"/></svg></button></div></td>
+          </tr>
+          <tr data-show="long">
+            <td class="num"><span class="n">7</span></td>
+            <td><div class="nm-edit" title="Entrance, wide, alternate with the shutters closed and the light from the left" contenteditable="plaintext-only" role="textbox" aria-label="Name of shot 7">Entrance, wide, alternate with the shutters closed and the light from the left</div></td>
+            <td><span class="thumb"><svg viewBox="300 200 1000 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span></td>
+            <td><b>35 mm</b><br><span class="meta">Full frame, 16:9</span></td>
+            <td class="num">1.6 m</td>
+            <td>WS</td>
+            <td><span class="clamp" title="Establish the room and the door with the shutters closed">Establish the room and the door with the shutters closed</span></td>
+            <td><span class="clamp" title="A person opens the door and steps inside">A person opens the door and steps inside</span></td>
+            <td><details class="note"><summary><span class="note-text">Keep the camera on the near side of the chair. The set has holes in the splats behind it, so any move that goes past the chair will show them. The door on the right stays in frame for the whole shot. If the 50 mm shot feels tight, go back to 35 mm and lower the camera to hip height, which keeps the chair and the door in the same frame. Check the frame against the reference photo before saving the shot again, and write down which lens it was matched with. The edge of the rug is not part of the set, so leave it out of the frame. The light note on the scene still applies: soft light from the left.</span></summary><span class="more"></span></details></td>
+            <td><div class="row-actions"><button class="btn btn-icon" type="button" aria-label="Move up shot 7" title="Move up"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Move down shot 7" title="Move down"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M4 9l4 4 4-4"/></svg></button><button class="btn btn-icon" type="button" aria-label="Duplicate shot 7" title="Duplicate"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1"/><path d="M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2"/></svg></button><button class="btn btn-icon" type="button" aria-label="Delete shot 7" title="Delete"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5v-2h3v2M4.5 4.5l.5 9h6l.5-9"/></svg></button></div></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="meta" style="margin-top:var(--s2)" data-show="default exporting unverified exported" id="row-count">6 shots</p>
+      <p class="meta" style="margin-top:var(--s2)" data-show="deleted">5 shots</p>
+      <p class="meta" style="margin-top:var(--s2)" data-show="long">40 shots</p>
+      <p class="hint" style="margin-top:var(--s1)" data-hide="empty">Heights and presets use your own assumptions. Names are editable in the table.</p>
+    </section>
+
+    <aside class="export" id="export" aria-labelledby="h-export">
+      <h2 id="h-export">Export</h2>
+      <p class="meta" data-hide="empty long deleted">6 shots from Test room, 2 m set. One zip download.</p>
+      <p class="meta" data-show="deleted">5 shots from Test room, 2 m set. One zip download.</p>
+      <p class="meta" data-show="empty">Nothing to export yet.</p>
+      <p class="meta" data-show="long">40 shots from the scene. One zip download.</p>
+
+      <div class="notice warn" data-show="unverified" role="status">
+        <p><strong>Heights unverified.</strong> 2 of 6 shots were saved before the scale was confirmed. shot-list.md says "heights unverified" for them.</p>
+        <p><a href="index.html#scale">Set scale</a> and update those shots to fix this.</p>
+      </div>
+
+      <div class="notice" data-show="exported" role="status">
+        <p><strong>6 shots exported.</strong> Your browser saved <span class="mono">test-room-2m-set-previz.zip</span>.</p>
+      </div>
+
+      <div data-show="exporting" role="status">
+        <p class="meta">Zipping frames: 4 of 6.</p>
+        <progress value="4" max="6" aria-label="Frames added to the zip"></progress>
+      </div>
+
+      <div>
+        <button class="btn btn-primary" type="button" data-show="default long unverified exported deleted">Export shot list</button>
+        <button class="btn btn-primary" type="button" data-show="exporting" disabled>Exporting</button>
+        <button class="btn" type="button" data-show="empty" disabled>Export shot list</button>
+        <p class="hint" style="margin-top:var(--s2)">Scene files are never included. Nothing leaves this computer.</p>
+      </div>
+
+      <div>
+        <h3 style="margin-bottom:var(--s2)">Folder contents</h3>
+        <p class="mono" style="margin-bottom:var(--s2)">test-room-2m-set-previz/</p>
+        <ul class="files">
+          <li><span class="mono">shots.json</span><span class="hint">Full records of every shot.</span></li>
+          <li><span class="mono">shot-list.md</span><span class="hint">Table with the film-craft shot list columns.</span></li>
+          <li><span class="mono">location-sheet.md</span><span class="hint">Filled from the scene record.</span></li>
+          <li><span class="mono">frames/shot-001.jpg</span><span class="hint" data-hide="empty long deleted">One frame per shot, up to shot-006.jpg. Exact aspect, no interface.</span><span class="hint" data-show="deleted">One frame per shot, up to shot-005.jpg. Exact aspect, no interface.</span><span class="hint" data-show="long">One frame per shot, up to shot-040.jpg. Exact aspect, no interface.</span><span class="hint" data-show="empty">One frame per shot. Exact aspect, no interface.</span></li>
+          <li><span class="mono">floor-plan.png</span><span class="hint">Top-down view with numbered cameras.</span></li>
+          <li><span class="mono">scene-ref.json</span><span class="hint">Scene name, file name, SHA-256 and scale source. No scene data.</span></li>
+        </ul>
+      </div>
+
+    </aside>
+  </div>
+
+</div>
+</main>
+
+<footer class="draftbar" aria-label="Draft controls, not part of the app">
+  <div class="line">
+    <span class="lbl">Draft only</span>
+    <span>Floor plan arrives with stand-ins.</span>
+    <span>Flow:</span>
+    <ol class="flow">
+      <li><a href="index.html#open">1 Open scene</a></li>
+      <li><a href="index.html#scale">2 Set scale</a></li>
+      <li><a href="stage.html#camera">3 Place camera</a></li>
+      <li><a href="stage.html#lens">4 Pick lens</a></li>
+      <li><a href="stage.html#save">5 Save shot</a></li>
+      <li><a href="shots.html#export">6 Export</a></li>
+    </ol>
+  </div>
+  <div class="line">
+    <span class="lbl">States</span>
+    <ul class="states">
+      <li><a href="shots.html">Default</a></li>
+      <li><a href="shots.html?state=empty">Empty</a></li>
+      <li><a href="shots.html?state=exporting">Export in progress</a></li>
+      <li><a href="shots.html?state=exported">Exported</a></li>
+      <li><a href="shots.html?state=deleted">Shot deleted</a></li>
+      <li><a href="shots.html?state=unverified">Heights unverified</a></li>
+      <li><a href="shots.html?state=long">Long content</a></li>
+    </ul>
+  </div>
+</footer>
+
+<div class="too-small" role="status">
+  <h1>This tool needs a larger window</h1>
+  <p>film-previz works in windows at least 900 px wide. Make this window wider to continue.</p>
+</div>
+
+<script>
+(function () {
+  var valid = ['default', 'empty', 'exporting', 'exported', 'deleted', 'unverified', 'long'];
+  var s = new URLSearchParams(location.search).get('state') || 'default';
+  if (valid.indexOf(s) < 0) s = 'default';
+  document.documentElement.dataset.state = s;
+  document.querySelectorAll('[data-show]').forEach(function (e) { e.toggleAttribute('hidden', e.dataset.show.split(' ').indexOf(s) < 0); });
+  document.querySelectorAll('[data-hide]').forEach(function (e) { if (e.dataset.hide.split(' ').indexOf(s) >= 0) e.setAttribute('hidden', ''); });
+  document.querySelectorAll('.states a').forEach(function (a) {
+    if ((new URL(a.href).searchParams.get('state') || 'default') === s) a.setAttribute('aria-current', 'true');
+  });
+  if (s === 'deleted') {
+    /* draft only: drop shot 4 and renumber the rows after it */
+    var rows = document.querySelectorAll('#shots-table tbody tr');
+    rows[3].remove();
+    for (var j = 4; j < rows.length; j++) {
+      var r = rows[j], was = j + 1, now = j;
+      r.querySelector('.n').textContent = now;
+      r.querySelectorAll('[aria-label]').forEach(function (e) { e.setAttribute('aria-label', e.getAttribute('aria-label').replace('shot ' + was, 'shot ' + now)); });
+    }
+  }
+  if (s === 'long') {
+    /* draft only: repeat the six sample rows until the table has 40 */
+    var body = document.querySelector('#shots-table tbody');
+    var base = Array.prototype.slice.call(body.querySelectorAll('tr:not([data-show])'));
+    for (var i = base.length + 2; i <= 40; i++) {
+      var c = base[(i - 1) % base.length].cloneNode(true);
+      c.querySelector('.n').textContent = i;
+      c.querySelector('.nm-edit').setAttribute('aria-label', 'Name of shot ' + i);
+      body.appendChild(c);
+    }
+  }
+})();
+</script>
+</body>
+</html>

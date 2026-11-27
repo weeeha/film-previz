@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage, film-previz draft</title>
+<link rel="stylesheet" href="draft.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="room-art">
+      <rect class="r-bg" x="-3000" y="-2000" width="7600" height="4900"/>
+      <polygon class="r-ceil" points="-3000,-1674 4600,-1674 1080,290 520,290"/>
+      <polygon class="r-floor" points="-3000,2804 4600,2804 1080,570 520,570"/>
+      <polygon class="r-side" points="-3000,-1674 520,290 520,570 -3000,2804"/>
+      <polygon class="r-side" points="4600,-1674 1080,290 1080,570 4600,2804"/>
+      <rect class="r-wall" x="520" y="290" width="560" height="280"/>
+      <rect class="r-door" x="851" y="383" width="84" height="187"/>
+      <rect class="r-obj" x="628" y="528" width="56" height="42"/>
+      <g class="r-line">
+        <line x1="520" y1="570" x2="-140" y2="900"/><line x1="613" y1="570" x2="173" y2="900"/>
+        <line x1="707" y1="570" x2="487" y2="900"/><line x1="800" y1="570" x2="800" y2="900"/>
+        <line x1="893" y1="570" x2="1113" y2="900"/><line x1="987" y1="570" x2="1427" y2="900"/>
+        <line x1="1080" y1="570" x2="1740" y2="900"/>
+        <line x1="473" y1="600" x2="1127" y2="600"/><line x1="410" y1="640" x2="1190" y2="640"/>
+        <line x1="315" y1="700" x2="1285" y2="700"/><line x1="174" y1="790" x2="1426" y2="790"/>
+      </g>
+    </g>
+  </defs>
+</svg>
+
+<header class="appbar">
+  <a class="brand" href="index.html">film-previz</a>
+  <nav class="tabs" aria-label="Views">
+    <a href="index.html">Scenes</a>
+    <a href="stage.html" aria-current="page">Stage</a>
+    <a href="shots.html">Shots</a>
+  </nav>
+  <div class="scene-chip">
+    <span class="name" title="Test room, 2 m set" data-hide="long">Test room, 2 m set</span>
+    <span class="name" title="Warehouse loading dock, north wall visible, second pass with the shutters closed" data-show="long">Warehouse loading dock, north wall visible, second pass with the shutters closed</span>
+    <span class="badge ok" data-hide="noscale">Scale confirmed, door 2.00 m</span>
+    <span class="badge warn" data-show="noscale">Scale not confirmed</span>
+  </div>
+</header>
+
+<main id="main" style="overflow:hidden">
+<div class="stage">
+
+  <div class="stage-main">
+    <div class="stage-bar">
+      <h1>Stage</h1>
+      <label class="switch"><input type="checkbox" id="through" checked> Look through shot camera</label>
+      <span class="meta" id="mask-text">Frame mask 16:9</span>
+      <span class="meta spacer">Drag to look. W A S D to move.</span>
+    </div>
+
+    <div class="viewport" id="vp" aria-label="Viewport, drawn for the draft">
+      <svg class="room" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g id="scene-g">
+        <use href="#room-art" id="room-use"/>
+        <g data-hide="nostandins">
+          <!-- stand-in A: 1.75 m, 4.0 m from the camera -->
+          <ellipse class="r-fig-line" cx="755" cy="772" rx="52" ry="10"/>
+          <rect class="r-fig" x="720" y="455" width="70" height="305" rx="35"/>
+          <polygon class="r-fig" points="755,732 743,752 767,752"/>
+          <!-- stand-in B: 1.62 m, 5.5 m -->
+          <ellipse class="r-fig-line" cx="1000" cy="652" rx="30" ry="6"/>
+          <rect class="r-fig" x="980" y="482" width="40" height="170" rx="20"/>
+        </g>
+        <g class="ref-lines" data-hide="noref">
+          <rect class="r-ref-case" x="858" y="392" width="84" height="187"/>
+          <line class="r-ref-case" x1="-3000" y1="432" x2="4600" y2="432"/>
+          <rect class="r-ref" x="858" y="392" width="84" height="187"/>
+          <line class="r-ref" x1="-3000" y1="432" x2="4600" y2="432"/>
+        </g>
+        </g>
+      </svg>
+      <div class="frame" id="frame">
+        <span class="tag" id="frame-tag">16:9, 50 mm</span>
+        <span class="centre"></span>
+      </div>
+          </div>
+
+    <div class="strip" aria-label="Shots on this scene">
+      <p class="empty-state" data-show="noshots">No shots yet. Set the camera and lens, then save the first shot.</p>
+      <a class="shot" href="shots.html" data-hide="noshots">
+        <span class="t"><svg viewBox="500 250 600 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>1 Entrance</b><span><span data-hide="noscale">35 mm, eye 1.6 m</span><span data-show="noscale">35 mm, 0.64 units, unverified</span></span>
+      </a>
+      <a class="shot" href="shots.html" aria-current="true" data-hide="noshots">
+        <span class="t"><svg viewBox="560 330 440 250" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>2 Cross to chair</b><span><span data-hide="noscale">50 mm, eye 1.6 m</span><span data-show="noscale">50 mm, 0.64 units, unverified</span></span><span><strong>Editing</strong></span>
+      </a>
+      <a class="shot" href="shots.html" data-hide="noshots">
+        <span class="t" style="--ar:1.5"><svg viewBox="560 420 260 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>3 At the chair</b><span><span data-hide="noscale">85 mm, hip 1.0 m</span><span data-show="noscale">85 mm, 0.40 units, unverified</span></span>
+      </a>
+      <a class="shot" href="shots.html" data-hide="noshots">
+        <span class="t" style="--ar:2.39"><svg viewBox="200 300 1200 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>4 Chair, low</b><span><span data-hide="noscale">24 mm, low 0.3 m</span><span data-show="noscale">24 mm, 0.12 units, unverified</span></span>
+      </a>
+      <a class="shot" href="shots.html" data-hide="noshots">
+        <span class="t" style="--ar:1.85"><svg viewBox="0 120 1100 620" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>5 Door, inside</b><span><span data-hide="noscale">28 mm, eye 1.6 m</span><span data-show="noscale">28 mm, 0.64 units, unverified</span></span>
+      </a>
+      <a class="shot" href="shots.html" data-show="long">
+        <span class="t"><svg viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>6 High corner</b><span><span data-hide="noscale">18 mm, high 2.5 m</span><span data-show="noscale">18 mm, 1.00 units, unverified</span></span>
+      </a>
+      <a class="shot" href="shots.html" data-show="long" title="7 Entrance, wide, alternate with the shutters closed and the light from the left">
+        <span class="t"><svg viewBox="300 200 1000 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#room-art"/></svg></span>
+        <b>7 Entrance, wide, alternate with the shutters closed and the light from the left</b><span><span data-hide="noscale">35 mm, eye 1.6 m</span><span data-show="noscale">35 mm, 0.64 units, unverified</span></span>
+      </a>
+    </div>
+  </div>
+
+  <aside class="inspector" aria-label="Inspector">
+    <div class="inspector-scroll" tabindex="0" role="region" aria-label="Shot, lens and camera settings">
+
+      <section class="insp" id="save" aria-labelledby="h-shot">
+        <h2 id="h-shot">Shot details</h2>
+        <div class="fields two">
+          <label class="field">Name
+            <input type="text" value="Cross to chair" data-hide="noshots long">
+            <input type="text" placeholder="Shot name" data-show="noshots">
+            <input type="text" value="Entrance, wide, alternate with the shutters closed and the light from the left" data-show="long">
+          </label>
+          <label class="field">Size
+            <select>
+              <option>Not set</option><option>ECU</option><option>CU</option><option>MCU</option>
+              <option selected>MS</option><option>MWS</option><option>WS</option><option>EWS</option>
+            </select>
+          </label>
+        </div>
+        <label class="field">Job
+          <input type="text" value="Follow the crossing" data-hide="noshots">
+          <input type="text" placeholder="What this shot must do" data-show="noshots">
+        </label>
+        <label class="field">Decisive action
+          <input type="text" value="She crosses the room to the chair" data-hide="noshots">
+          <input type="text" placeholder="What happens in the frame" data-show="noshots">
+        </label>
+        <label class="field">Notes
+          <textarea rows="3" data-hide="noshots">Door stays on the right third.</textarea>
+          <textarea rows="3" data-show="noshots"></textarea>
+        </label>
+      </section>
+
+      <section class="insp" id="lens" aria-labelledby="h-lens">
+        <h2 id="h-lens">Lens</h2>
+        <div>
+          <span class="group-label" id="lbl-focal">Focal length, mm</span>
+          <div class="chips c5" role="radiogroup" aria-labelledby="lbl-focal" id="focal">
+            <input type="radio" name="fl" id="f14" value="14"><label for="f14">14</label>
+            <input type="radio" name="fl" id="f18" value="18"><label for="f18">18</label>
+            <input type="radio" name="fl" id="f24" value="24"><label for="f24">24</label>
+            <input type="radio" name="fl" id="f28" value="28"><label for="f28">28</label>
+            <input type="radio" name="fl" id="f35" value="35"><label for="f35">35</label>
+            <input type="radio" name="fl" id="f50" value="50" checked><label for="f50">50</label>
+            <input type="radio" name="fl" id="f85" value="85"><label for="f85">85</label>
+            <input type="radio" name="fl" id="f100" value="100"><label for="f100">100</label>
+            <input type="radio" name="fl" id="f135" value="135"><label for="f135">135</label>
+            <input type="number" id="f-free" min="1" step="0.5" placeholder="Other" aria-label="Other focal length, mm">
+          </div>
+        </div>
+        <div class="fields sens">
+          <label class="field">Sensor
+            <select id="sensor">
+              <option value="36">Full frame 36 x 24 mm</option>
+              <option value="24.89">Super 35 24.89 x 18.66 mm</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label class="field">Aspect
+            <select id="aspect">
+              <option value="1.777777778" selected>16:9</option>
+              <option value="1.85">1.85:1</option>
+              <option value="2.39">2.39:1</option>
+              <option value="1.5">3:2</option>
+              <option value="1.333333333">4:3</option>
+              <option value="1">1:1</option>
+            </select>
+          </label>
+        </div>
+        <div class="fields two" id="custom-sensor" hidden>
+          <label class="field">Sensor width, mm
+            <input type="number" id="cw" value="36" step="0.01" min="1">
+          </label>
+          <label class="field">Sensor height, mm
+            <input type="number" id="ch" value="24" step="0.01" min="1">
+          </label>
+        </div>
+        <div>
+          <p class="readout" id="readout" aria-live="polite">35 mm on 36 mm: 54.43 degrees horizontal, 32.27 vertical</p>
+          <p class="sub-readout" id="frame-size">Frame on the sensor: 36 x 20.25 mm</p>
+        </div>
+      </section>
+
+      <section class="insp" id="camera" aria-labelledby="h-camera">
+        <h2 id="h-camera">Camera</h2>
+        <div class="notice warn" data-show="noscale" role="status">
+          <p><strong>Scale not confirmed.</strong> Heights are in model units, so the presets are off.</p>
+          <p><a href="index.html#scale">Set scale</a> to turn them on.</p>
+        </div>
+        <div>
+          <span class="group-label" id="lbl-height">Height preset</span>
+          <div class="chips c4" role="radiogroup" aria-labelledby="lbl-height">
+            <input type="radio" name="hp" id="hp-low" data-off="noscale"><label for="hp-low">Low<small>0.3 m</small></label>
+            <input type="radio" name="hp" id="hp-hip" data-off="noscale"><label for="hp-hip">Hip<small>1.0 m</small></label>
+            <input type="radio" name="hp" id="hp-eye" data-off="noscale" checked><label for="hp-eye">Eye<small>1.6 m</small></label>
+            <input type="radio" name="hp" id="hp-high" data-off="noscale"><label for="hp-high">High<small>2.5 m</small></label>
+          </div>
+          <p class="hint" style="margin-top:var(--s2)">Presets are assumptions. Eye height changes from person to person. <button class="btn btn-plain" type="button" style="min-height:24px;padding:0 var(--s1)">Edit presets</button></p>
+        </div>
+        <div class="fields two">
+          <label class="field" data-hide="noscale">Height above ground, m
+            <input type="number" value="1.60" step="0.01">
+          </label>
+          <label class="field" data-show="noscale">Height, model units
+            <input type="number" value="0.64" step="0.01">
+          </label>
+          <label class="field">Heading, degrees
+            <input type="number" value="215" step="1">
+          </label>
+          <label class="field">Pitch, degrees
+            <input type="number" value="-2.0" step="0.5">
+          </label>
+          <label class="field">Roll, degrees
+            <input type="number" value="0.0" step="0.5">
+          </label>
+        </div>
+        <div class="fields two">
+          <label class="field">X
+            <input type="number" value="1.20" step="0.05">
+          </label>
+          <label class="field">Z
+            <input type="number" value="3.10" step="0.05">
+          </label>
+        </div>
+        <p class="hint" data-hide="noscale">X and Z are metres from the scene origin. Height is the vertical position, measured from the floor once scale is confirmed.</p>
+        <p class="hint" data-show="noscale">X and Z are model units from the scene origin. Height is the vertical position, measured from the floor once scale is confirmed.</p>
+      </section>
+
+      <details class="insp" id="standins" open data-closed="nostandins">
+        <summary><h2 id="h-stand">Stand-ins</h2><span class="hint" data-hide="nostandins">2 on this scene</span><span class="hint" data-show="nostandins">None yet</span></summary>
+        <div class="insp-body">
+          <div data-hide="nostandins" class="rows" id="standin-list">
+            <div class="standin">
+              <b>Person A</b><span class="r pct" data-h="1.75" data-d="4.0">75.6% of frame height</span>
+              <span class="hint">1.75 m tall, 4.0 m away</span><span class="hint r pct-head" data-h="0.23" data-d="4.0" style="text-align:right">Head 9.9%</span>
+            </div>
+            <div class="standin">
+              <b>Person B</b><span class="r pct" data-h="1.62" data-d="5.5">50.9% of frame height</span>
+              <span class="hint">1.62 m tall, 5.5 m away</span><span class="hint r pct-head" data-h="0.23" data-d="5.5" style="text-align:right">Head 7.2%</span>
+            </div>
+            <p class="hint">Head height of 0.23 m is an assumption. Use these readouts to check face size against the shot size.</p>
+          </div>
+          <div data-show="nostandins" class="rows">
+            <p class="meta">No stand-ins on this scene. Add one to check how large a person is in the frame.</p>
+          </div>
+          <button class="btn" type="button" style="justify-self:start">Add stand-in</button>
+        </div>
+      </details>
+
+      <details class="insp" id="reference" open data-closed="noref">
+        <summary><h2 id="h-ref">Reference photo</h2><span class="hint" data-hide="noref">ref-room-01.jpg</span><span class="hint" data-show="noref">None yet</span></summary>
+        <div class="insp-body">
+          <div data-hide="noref" class="rows">
+            <p class="mono" style="overflow-wrap:anywhere">ref-room-01.jpg</p>
+            <p class="meta">Used for camera position and geometry only. The photo stays on this computer.</p>
+            <label class="switch"><input type="checkbox" id="overlay" checked> Show overlay at 50 percent</label>
+            <p class="hint">Press X to swap between the frame and the photo.</p>
+          </div>
+          <div data-show="noref" class="rows">
+            <p class="meta">No reference photo. Add one to compare it with the frame, side by side or as an overlay. The photo stays on this computer.</p>
+          </div>
+          <button class="btn" type="button" style="justify-self:start"><span data-hide="noref">Replace photo</span><span data-show="noref">Add reference photo</span></button>
+        </div>
+      </details>
+
+    </div>
+
+    <div class="insp-foot">
+      <p class="hint" data-show="noscale">This shot will save with heights unverified.</p>
+      <div class="row">
+        <button class="btn btn-primary" type="button" data-hide="noshots">Update shot 2</button>
+        <button class="btn" type="button" data-hide="noshots">Save as new shot</button>
+        <button class="btn btn-primary" type="button" data-show="noshots">Save shot</button>
+      </div>
+    </div>
+  </aside>
+
+</div>
+</main>
+
+<footer class="draftbar" aria-label="Draft controls, not part of the app">
+  <div class="line">
+    <span class="lbl">Draft only</span>
+    <span>Flow:</span>
+    <ol class="flow">
+      <li><a href="index.html#open">1 Open scene</a></li>
+      <li><a href="index.html#scale">2 Set scale</a></li>
+      <li><a href="stage.html#camera">3 Place camera</a></li>
+      <li><a href="stage.html#lens">4 Pick lens</a></li>
+      <li><a href="stage.html#save">5 Save shot</a></li>
+      <li><a href="shots.html#export">6 Export</a></li>
+    </ol>
+  </div>
+  <div class="line">
+    <span class="lbl">States</span>
+    <ul class="states">
+      <li><a href="stage.html">Default</a></li>
+      <li><a href="stage.html?state=noscale">Scale not confirmed</a></li>
+      <li><a href="stage.html?state=nostandins">No stand-ins</a></li>
+      <li><a href="stage.html?state=noref">No reference photo</a></li>
+      <li><a href="stage.html?state=noshots">No shots</a></li>
+      <li><a href="stage.html?state=long">Long content</a></li>
+    </ul>
+  </div>
+</footer>
+
+<div class="too-small" role="status">
+  <h1>This tool needs a larger window</h1>
+  <p>film-previz works in windows at least 900 px wide. Make this window wider to continue.</p>
+</div>
+
+<script>
+(function () {
+  var valid = ['default', 'noscale', 'nostandins', 'noref', 'noshots', 'long'];
+  var s = new URLSearchParams(location.search).get('state') || 'default';
+  if (valid.indexOf(s) < 0) s = 'default';
+  document.documentElement.dataset.state = s;
+  document.querySelectorAll('[data-show]').forEach(function (e) { e.toggleAttribute('hidden', e.dataset.show.split(' ').indexOf(s) < 0); });
+  document.querySelectorAll('[data-hide]').forEach(function (e) { if (e.dataset.hide.split(' ').indexOf(s) >= 0) e.setAttribute('hidden', ''); });
+  document.querySelectorAll('[data-off]').forEach(function (e) { if (e.dataset.off.split(' ').indexOf(s) >= 0) { e.disabled = true; e.checked = false; } });
+  document.querySelectorAll('details[data-closed]').forEach(function (e) { if (e.dataset.closed.split(' ').indexOf(s) >= 0) e.removeAttribute('open'); });
+  document.querySelectorAll('.states a').forEach(function (a) {
+    if ((new URL(a.href).searchParams.get('state') || 'default') === s) a.setAttribute('aria-current', 'true');
+  });
+
+  /* lens readout: hfov = 2 atan(w / 2f), vfov = 2 atan((w / a) / 2f) */
+  var $ = function (id) { return document.getElementById(id); };
+  var vp = $('vp'), sensor = $('sensor'), aspect = $('aspect'), free = $('f-free'), cw = $('cw');
+  function num(x) { return String(+x.toFixed(2)); }
+  /* the drawing follows the lens: a pinhole camera scales the image about its centre by
+     (f / 35) x (36 / sensor width). At 35 mm on 36 mm the 1600 unit wide room spans the frame
+     width, so the picture and the readout agree at every aspect. Not applied while walking. */
+  var sceneG = $('scene-g'), lastF = 35, lastW = 36;
+  function scaleScene(f, w) {
+    if (f && w) { lastF = f; lastW = w; }
+    var cw = vp.clientWidth, ch = vp.clientHeight;
+    var slice = Math.max(cw / 1600, ch / 900);
+    var k = 1;
+    if (!vp.classList.contains('walk') && slice > 0) k = $('frame').offsetWidth * (lastF * 36) / (35 * lastW) / (1600 * slice);
+    sceneG.setAttribute('transform', 'translate(800 450) scale(' + k.toFixed(4) + ') translate(-800 -450)');
+    sceneG.dataset.k = k.toFixed(4);
+  }
+  function update() {
+    var checked = document.querySelector('input[name=fl]:checked');
+    var f = checked ? +checked.value : +free.value;
+    var w = sensor.value === 'custom' ? +cw.value : +sensor.value;
+    var a = +aspect.value;
+    $('custom-sensor').hidden = sensor.value !== 'custom';
+    if (!(f > 0 && w > 0)) return;
+    var deg = 180 / Math.PI;
+    var h = 2 * Math.atan(w / (2 * f)) * deg, v = 2 * Math.atan((w / a) / (2 * f)) * deg;
+    $('readout').textContent = num(f) + ' mm on ' + num(w) + ' mm: ' + h.toFixed(2) + ' degrees horizontal, ' + v.toFixed(2) + ' vertical';
+    $('frame-size').textContent = 'Frame on the sensor: ' + num(w) + ' x ' + num(w / a) + ' mm';
+    vp.style.setProperty('--ar', a);
+    $('mask-text').textContent = 'Frame mask ' + aspect.options[aspect.selectedIndex].text;
+    scaleScene(f, w);
+    $('frame-tag').textContent = aspect.options[aspect.selectedIndex].text + ', ' + num(f) + ' mm';
+    var fh = function (d) { return d * (w / a) / f; };
+    document.querySelectorAll('.pct').forEach(function (e) { e.textContent = (e.dataset.h / fh(e.dataset.d) * 100).toFixed(1) + '% of frame height'; });
+    document.querySelectorAll('.pct-head').forEach(function (e) { e.textContent = 'Head ' + (e.dataset.h / fh(e.dataset.d) * 100).toFixed(1) + '%'; });
+  }
+  document.querySelectorAll('input[name=fl]').forEach(function (r) { r.addEventListener('change', function () { free.value = ''; update(); }); });
+  free.addEventListener('input', function () {
+    document.querySelectorAll('input[name=fl]').forEach(function (r) { r.checked = false; });
+    update();
+  });
+  sensor.addEventListener('change', update);
+  cw.addEventListener('input', update);
+  aspect.addEventListener('change', update);
+  $('through').addEventListener('change', function () { vp.classList.toggle('walk', !this.checked); update(); });
+  window.addEventListener('resize', function () { scaleScene(); });
+  if (window.ResizeObserver) new ResizeObserver(function () { scaleScene(); }).observe(vp);
+  var ov = $('overlay');
+  function syncOverlay() { vp.classList.toggle('ref-on', !!ov && ov.checked); }
+  if (ov) { ov.addEventListener('change', syncOverlay); syncOverlay(); }
+  update();
+})();
+</script>
+</body>
+</html>

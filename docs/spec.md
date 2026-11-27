@@ -102,6 +102,7 @@ type Scene = {
   frontHeadingDeg: number;         // direction treated as heading 0
   lightNote: string;
   markers: Marker[];
+  actionAxis?: { label: string; aM: [number, number]; bM: [number, number] } | null;  // x and z in meters, set from two stand-ins; absent or null when not set
   createdAt: string;
 };
 
@@ -153,6 +154,7 @@ type Shot = {
   move: Move;
   standIns: StandIn[];
   frame: { file: string; widthPx: number; heightPx: number };
+  endFrame?: { file: string; widthPx: number; heightPx: number } | null;  // frames/shot-NNN-end.jpg for a move with an end pose; missing means none
   referencePhoto: { file: string; role: string } | null;  // name only, never the pixels
   notes: string;
   createdAt: string;
@@ -176,8 +178,8 @@ These values were computed with the formula above. The unit test (task 10 of the
 ## 5. Decisions
 
 1. **Marble is the set source.** Genie 3 and Runway GWM Worlds 2 have no public API. Marble produces a persistent, exportable 3D scene from text, an image or video, and has a documented API. The scene is generated once, exported, and viewed locally. Why: a set for previz must stay the same between visits, and a streamed pixel world drifts.
-2. **Splat for looking, collider mesh for picking.** The splat (SPZ, about 2M splats, or the low-res 500k version) is the visible set. The collider mesh (GLB, 100 to 200k triangles) is invisible and used for floor and wall hits when marking scale and placing stand-ins. Why: Spark's documentation does not describe raycasting against splats (unverified), so picking goes through the mesh. The collider mesh is covered by the Standard plan; the high-quality mesh needs Pro and is not needed.
-3. **Viewer stack: three.js plus Spark.** Spark is MIT licensed, renders splats inside a normal three.js scene, reads SPZ and PLY, and states WebXR support. Spark's own getting-started example uses three.js 0.180.0; the exact minimum three.js version is not stated on the pages read (unverified). Task 1 pins both versions and records them.
+2. **Splat for looking, collider mesh for picking.** The splat (SPZ, about 2M splats, or the low-res 500k version) is the visible set. The collider mesh (GLB, 100 to 200k triangles) is invisible and used for floor and wall hits when marking scale and placing stand-ins. Why: the collider gives exact hits. Spark 2.4.0 can raycast splats (measured in phase 0 on a synthetic set: hits land 1 to 5 cm in front of the surface, with an occasional miss, at 23 to 95 ms a ray), so splat picking is a fallback for exports without a collider. The collider mesh is covered by the Standard plan; the high-quality mesh needs Pro and is not needed.
+3. **Viewer stack: three.js plus Spark.** Spark is MIT licensed, renders splats inside a normal three.js scene, reads SPZ and PLY, and states WebXR support. Spark's own getting-started example uses three.js 0.180.0; Spark 2.4.0 declares the peer range `>=0.180.0` (read from the installed package in phase 0). The build pins three 0.180.0 and Spark 2.4.0.
 4. **Coordinates.** Marble worlds use OpenCV axes (+x left, +y down, +z forward). On load the splat and the collider mesh are rotated 180 degrees about the x axis, which flips y and z, to reach three.js axes (y up, camera looks down -z). The Marble documentation describes the conversion as scaling y and z by -1. Task 3 confirms by loading a real export and checking the floor is below the walk camera and the scene is not mirrored.
 5. **Scale is a required step before heights mean anything.** A splat scene has no reliable real-world scale. Order of preference:
    1. If the world came through the Marble API, `semantics_metadata.metric_scale_factor` converts raw coordinates to meters and `ground_plane_offset` gives the floor height in the scaled frame. Both can be null, and `metric_scale_factor` equal to 1.0 means the scale could not be inferred. How accurate the inferred scale is, is unverified. The user still checks it against a known object.
@@ -224,7 +226,7 @@ A $0 path exists up to a point: phases 1 and 2 (draft, lens math, frame grab) ca
 5. **Lens math, rendered.** In a synthetic test scene, a box 1.00 m wide centered at 10.00 m distance, seen with 50 mm on a 36 mm sensor, fills 13.9 percent of the frame width (50 x 1 / (10 x 36)), measured on the frame grab pixels, tolerance 0.5 points. The same box with 35 mm fills 9.7 percent.
 6. **Frame grab.** The grab has exactly the recorded aspect (1920 x 1080 for 16:9; 1920 x 803 for 2.39:1), shows no UI overlays, and shows the stand-ins.
 7. **Height.** With scale confirmed, the "eye" preset records `heightAboveGroundM` of 1.60 (within 0.01). With scale unconfirmed, presets are disabled and the saved shot has `scaleConfirmed: false`.
-8. **Save and restore.** Save a shot, reload, open it from the Shots view. The viewport shows the same frame as the saved grab, mean absolute pixel difference under 2 of 255 (threshold to confirm in phase 2).
+8. **Save and restore.** Save a shot, reload, open it from the Shots view. The viewport shows the same frame as the saved grab, mean absolute pixel difference under 2 of 255. Confirmed in phase 2 on the 500k test set in Chromium (SwiftShader) and WebKit: the restored grab matched the stored JPEG with a mean absolute difference of 0.00 in all 6 measured shots, and a 5 degree heading change gave about 25. The threshold stays at 2.
 9. **Export.** Exporting N shots produces a folder with N JPEG frames, a `shots.json` that validates against the schema in section 4, and a `shot-list.md` whose header cells match the column mapping in section 3 and which has N rows.
 10. **film-craft fit.** The rows of `shot-list.md` paste into a film's shot list file in film-craft and render as a table without edits to the header.
 11. **Local only.** After the scene loads, the browser's network panel shows no request that carries scene bytes, and no request to a host other than the app's own origin.
@@ -318,8 +320,8 @@ Read on the primary pages on 2026-10-27 unless stated.
 | Marble plan prices and API credit prices | Unverified; not stated on the pages read |
 | Whether the web app export (not API) carries scale metadata | Unverified |
 | Spark: MIT, three.js renderer, `SparkRenderer` and `SplatMesh`, reads PLY, SPZ, SPLAT, KSPLAT, SOG | Verified, [Spark repo](https://github.com/sparkjsdev/spark) and [Spark overview](https://sparkjs.dev/docs/overview/) |
-| Spark minimum three.js version | Unverified; sources disagree (r179 vs r180). Spark's example uses 0.180.0 |
-| Spark raycasting against splats | Unverified; not described on the pages read |
+| Spark minimum three.js version | Measured in phase 0: Spark 2.4.0 declares peer `three >=0.180.0`; 0.180.0 renders in Chrome 157 and Safari 26.6.2 |
+| Spark raycasting against splats | Measured in phase 0 on a synthetic set: supported in 2.4.0 (`SplatMesh.raycast`), 1 to 5 cm in front of the surface, CPU cost 23 to 95 ms a ray. Behavior on a real Marble export: unverified |
 | Spark WebXR support | Stated on the Spark overview page; behavior on Quest 3 unverified |
 | `PerspectiveCamera.setFocalLength`, `filmGauge` (default 35 mm, larger axis), `getFilmWidth`, `getFilmHeight`, `getFocalLength`, `getEffectiveFOV`, `updateProjectionMatrix` | Verified, [three.js docs](https://threejs.org/docs/pages/PerspectiveCamera.html). Behavior: criteria 4 and 5 |
 | Super 35 gate size of 24.89 x 18.66 mm | Unverified |

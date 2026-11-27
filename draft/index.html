@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scenes, film-previz draft</title>
+<link rel="stylesheet" href="draft.css">
+</head>
+<body>
+
+<header class="appbar">
+  <a class="brand" href="index.html">film-previz</a>
+  <nav class="tabs" aria-label="Views">
+    <a href="index.html" aria-current="page">Scenes</a>
+    <a href="stage.html">Stage</a>
+    <a href="shots.html">Shots</a>
+  </nav>
+  <div class="scene-chip">
+    <span data-show="default mismatch loading"><span class="name" title="Test room, 2 m set">Test room, 2 m set</span></span>
+    <span data-show="long"><span class="name" title="Warehouse loading dock, north wall visible, second pass with the shutters closed">Warehouse loading dock, north wall visible, second pass with the shutters closed</span></span>
+    <span data-show="default long"><span class="badge ok">Scale confirmed, door 2.00 m</span></span>
+    <span data-show="loading"><span class="badge">Loading</span></span>
+    <span data-show="mismatch"><span class="badge warn">Scale not confirmed</span></span>
+    <span data-show="empty error error-spz nowebgl toolarge"><span class="meta">No scene loaded</span></span>
+  </div>
+</header>
+
+<main id="main">
+<div class="page">
+
+  <div class="page-head">
+    <h1>Scenes</h1>
+  </div>
+
+  <div class="scenes-grid">
+    <div>
+
+      <section id="open" aria-labelledby="h-file">
+        <h2 id="h-file" class="panel-title">Scene file</h2>
+
+        <!-- default and long -->
+        <div data-show="default long">
+          <div class="file-row">
+            <div class="grow">
+              <p class="file-name">set-01-2m.spz</p>
+              <p class="meta">Collider mesh: <span class="mono">set-01-collider.glb</span>, 2.9 KB. SHA-256 <span class="mono">9f3c1a7e5b20</span>. Files stay on this computer.</p>
+            </div>
+            <button class="btn" type="button">Choose a different file</button>
+          </div>
+          <dl class="facts">
+            <div><dt>Size</dt><dd>8.4 MB</dd></div>
+            <div><dt>Splats</dt><dd>1,999,628</dd></div>
+            <div><dt>First frame</dt><dd>0.6 s</dd></div>
+          </dl>
+        </div>
+
+        <!-- empty -->
+        <div data-show="empty" class="dropzone">
+          <h3>No scene is open</h3>
+          <p class="meta" style="max-width:62ch">Choose an SPZ or PLY file exported from Marble. Add a GLB collider mesh if you have one, so you can mark a known distance. Files stay on this computer.</p>
+          <button class="btn btn-primary" type="button">Choose scene file</button>
+          <p class="hint">You can also drop the file on this page.</p>
+        </div>
+
+        <!-- loading -->
+        <div data-show="loading" class="file-row" role="status">
+          <div class="grow">
+            <p class="file-name">set-01-2m.spz</p>
+            <p class="meta">Reading the file: 4.1 of 8.4 MB (49 percent). Next: parse, upload, first frame.</p>
+            <p class="meta">Collider mesh: <span class="mono">set-01-collider.glb</span>, 2.9 KB, read.</p>
+            <progress value="4.1" max="8.4" aria-label="Bytes read"></progress>
+          </div>
+          <button class="btn" type="button">Cancel</button>
+        </div>
+
+        <!-- error: unsupported file -->
+        <div data-show="error" class="notice err" role="alert">
+          <p><strong>Unsupported file.</strong> <span class="mono">street-scan.obj</span> is not a splat file.</p>
+          <p>Open an SPZ or PLY file. A GLB file works only as a collider mesh, next to a splat file.</p>
+          <div class="actions"><button class="btn btn-primary" type="button">Choose another file</button></div>
+        </div>
+
+        <!-- error: WebGL2 missing -->
+        <div data-show="nowebgl" class="notice err" role="alert">
+          <p><strong>This browser cannot show scenes.</strong> film-previz needs WebGL 2, and this browser does not offer it.</p>
+          <p>Open film-previz in a current version of Chrome or Safari. If hardware acceleration is turned off, turn it on in the browser settings.</p>
+          <div class="actions"><button class="btn" type="button">Check again</button></div>
+        </div>
+
+        <!-- error: scene too large for memory -->
+        <div data-show="toolarge" class="notice err" role="alert">
+          <p><strong>This scene is too large for this computer's memory.</strong> <span class="mono">set-01-full.spz</span> has 31,402,118 splats, and the browser stopped it at 62 percent.</p>
+          <p>Export a smaller version from Marble, such as the 2 m or the 500k set, and open that file.</p>
+          <div class="actions"><button class="btn btn-primary" type="button">Choose another file</button></div>
+        </div>
+
+        <!-- error: spz parse -->
+        <div data-show="error-spz" class="notice err" role="alert">
+          <p><strong>This SPZ file could not be read.</strong> <span class="mono">set-01-2m.spz</span> stopped parsing at byte 4,194,304.</p>
+          <p>The file may be cut short. If it is a PLY file with the wrong extension, read it as PLY.</p>
+          <div class="actions">
+            <button class="btn btn-primary" type="button">Try as PLY</button>
+            <button class="btn" type="button">Choose another file</button>
+          </div>
+        </div>
+
+        <!-- error: hash mismatch on re-open -->
+        <div data-show="mismatch">
+          <div class="notice warn" role="alert">
+            <p><strong>This file is not the saved scene.</strong> The saved scene "Test room, 2 m set" expects SHA-256 <span class="mono">9f3c1a7e5b20</span>. The file you opened has <span class="mono">41d0a6c39e77</span>.</p>
+            <p>The 6 shots saved on that scene stay attached to the original file.</p>
+            <div class="actions">
+              <button class="btn btn-primary" type="button">Open as a new scene</button>
+              <button class="btn" type="button">Choose the original file</button>
+            </div>
+          </div>
+          <dl class="facts">
+            <div><dt>Size</dt><dd>8.4 MB</dd></div>
+            <div><dt>Splats</dt><dd>1,999,628</dd></div>
+            <div><dt>First frame</dt><dd>0.6 s</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section id="scale" class="scale-block" aria-labelledby="h-scale" data-show="default long mismatch">
+        <div class="scale-head">
+          <h2 id="h-scale">Scale</h2>
+          <span class="badge ok" data-show="default long">Confirmed, manual</span>
+          <span class="badge warn" data-show="mismatch">Not confirmed</span>
+        </div>
+        <p class="meta" style="max-width:68ch">A splat has no real-world size. Mark a known distance, such as a door, and type its length. Heights and distances on the Stage are in metres only after this step.</p>
+        <form onsubmit="return false" class="fields three" aria-label="Scale from a known object">
+          <label class="field">Known object
+            <input type="text" value="door">
+          </label>
+          <label class="field">Known length, m
+            <input type="number" value="2.00" step="0.01" min="0.01">
+          </label>
+          <label class="field">Source
+            <select>
+              <option disabled>Marble scale (none in this file)</option>
+              <option selected>Manual, two marked points</option>
+            </select>
+          </label>
+        </form>
+        <dl class="scale-readout">
+          <div><dt>Measured between marked points</dt><dd>0.800 units</dd></div>
+          <div><dt>Scale factor</dt><dd>2.500 m per unit</dd></div>
+          <div><dt>Check</dt><dd>Measure tool reads 2.00 m</dd></div>
+        </dl>
+        <p class="hint">A 1.75 m reference figure stands next to the marked door in the preview, so you can judge the size by eye.</p>
+        <div class="next-row">
+          <button class="btn" type="button">Mark two points</button>
+          <button class="btn" type="button">Apply scale</button>
+          <p class="meta" data-show="default long">Scale is confirmed. Next: place the camera.</p>
+          <p class="meta" data-show="mismatch">Confirm the scale again for this file before you rely on heights.</p>
+          <a class="btn btn-primary" href="stage.html" data-show="default long">Open Stage</a>
+          <a class="btn" href="stage.html?state=noscale" data-show="mismatch">Open Stage without scale</a>
+        </div>
+      </section>
+
+      <section class="scale-block" data-show="empty loading error error-spz nowebgl toolarge" aria-label="Scale">
+        <h2>Scale</h2>
+        <p class="meta">The scale step opens after a scene has loaded.</p>
+      </section>
+    </div>
+
+    <aside data-show="default long mismatch" aria-labelledby="h-details">
+      <h2 id="h-details" class="panel-title">Scene details</h2>
+      <form class="side-form" onsubmit="return false">
+        <label class="field">Scene name
+          <textarea class="two-rows" rows="2" data-hide="long">Test room, 2 m set</textarea>
+          <textarea class="two-rows" rows="2" data-show="long">Warehouse loading dock, north wall visible, second pass with the shutters closed</textarea>
+        </label>
+        <label class="field">Front direction, degrees
+          <input type="number" value="0" step="1">
+          <span class="hint">Heading 0 on the Stage points this way.</span>
+        </label>
+        <div class="fields">
+          <p class="group-label" style="margin:0">Ground</p>
+          <dl class="kv">
+            <dt>Floor height</dt><dd>0.000 m after scaling</dd>
+            <dt>Offset removed</dt><dd>1.200 m</dd>
+          </dl>
+          <button class="btn" type="button" style="justify-self:start">Mark the floor again</button>
+        </div>
+        <label class="field">Light note
+          <textarea rows="4" data-hide="long">Soft light from the left, no direct sun on the floor.</textarea>
+          <textarea rows="6" data-show="long">Keep the camera on the near side of the chair. The set has holes in the splats behind it, so any move that goes past the chair will show them. The door on the right stays in frame for the whole shot. If the 50 mm shot feels tight, go back to 35 mm and lower the camera to hip height, which keeps the chair and the door in the same frame. Check the frame against the reference photo before saving the shot again, and write down which lens it was matched with. The edge of the rug is not part of the set, so leave it out of the frame. The light note on the scene still applies: soft light from the left.</textarea>
+          <span class="hint">Copied into the location sheet.</span>
+        </label>
+        <button class="btn" type="button" style="justify-self:start">Save details</button>
+      </form>
+    </aside>
+  </div>
+
+  <section aria-labelledby="h-past">
+    <h2 id="h-past" class="panel-title">Past scenes</h2>
+    <div data-show="empty" class="empty-state">
+      <p>No scenes yet. A scene you open is listed here with its hash and shot count, so you can open it again and keep its shots.</p>
+    </div>
+    <div class="table-wrap" data-hide="empty" tabindex="0" role="region" aria-label="Past scenes">
+      <table class="past">
+        <thead><tr><th>Name</th><th>SHA-256</th><th class="num">Shots</th><th><span class="sr">Action</span></th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="trunc">Test room, 2 m set</span></td>
+            <td class="mono">9f3c1a7e5b20</td>
+            <td class="num">6</td>
+            <td><button class="btn" type="button">Choose file again</button></td>
+          </tr>
+          <tr>
+            <td><span class="trunc">Test room, 500k set</span></td>
+            <td class="mono">b81d40c2a964</td>
+            <td class="num">0</td>
+            <td><button class="btn" type="button">Choose file again</button></td>
+          </tr>
+          <tr data-show="long">
+            <td><span class="trunc" title="Warehouse loading dock, north wall visible, second pass with the shutters closed">Warehouse loading dock, north wall visible, second pass with the shutters closed</span></td>
+            <td class="mono">c5e07b19d3f8</td>
+            <td class="num">40</td>
+            <td><button class="btn" type="button">Choose file again</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div>
+</main>
+
+<footer class="draftbar" aria-label="Draft controls, not part of the app">
+  <div class="line">
+    <span class="lbl">Draft only</span>
+    <span>Flow:</span>
+    <ol class="flow">
+      <li><a href="index.html#open">1 Open scene</a></li>
+      <li><a href="index.html#scale">2 Set scale</a></li>
+      <li><a href="stage.html#camera">3 Place camera</a></li>
+      <li><a href="stage.html#lens">4 Pick lens</a></li>
+      <li><a href="stage.html#save">5 Save shot</a></li>
+      <li><a href="shots.html#export">6 Export</a></li>
+    </ol>
+  </div>
+  <div class="line">
+    <span class="lbl">States</span>
+    <ul class="states">
+      <li><a href="index.html">Default</a></li>
+      <li><a href="index.html?state=empty">Empty</a></li>
+      <li><a href="index.html?state=loading">Loading</a></li>
+      <li><a href="index.html?state=error">Unsupported file</a></li>
+      <li><a href="index.html?state=error-spz">SPZ parse failed</a></li>
+      <li><a href="index.html?state=nowebgl">WebGL2 missing</a></li>
+      <li><a href="index.html?state=toolarge">Scene too large</a></li>
+      <li><a href="index.html?state=mismatch">Hash mismatch</a></li>
+      <li><a href="index.html?state=long">Long content</a></li>
+    </ul>
+  </div>
+</footer>
+
+<div class="too-small" role="status">
+  <h1>This tool needs a larger window</h1>
+  <p>film-previz works in windows at least 900 px wide. Make this window wider to continue.</p>
+</div>
+
+<script>
+(function () {
+  var valid = ['default', 'empty', 'loading', 'error', 'error-spz', 'nowebgl', 'toolarge', 'mismatch', 'long'];
+  var s = new URLSearchParams(location.search).get('state') || 'default';
+  if (valid.indexOf(s) < 0) s = 'default';
+  document.documentElement.dataset.state = s;
+  document.querySelectorAll('[data-show]').forEach(function (e) { e.toggleAttribute('hidden', e.dataset.show.split(' ').indexOf(s) < 0); });
+  document.querySelectorAll('[data-hide]').forEach(function (e) { if (e.dataset.hide.split(' ').indexOf(s) >= 0) e.setAttribute('hidden', ''); });
+  document.querySelectorAll('.states a').forEach(function (a) {
+    var q = new URL(a.href).searchParams.get('state') || 'default';
+    if (q === s) a.setAttribute('aria-current', 'true');
+  });
+  document.querySelectorAll('.flow a').forEach(function (a) {
+    if (new URL(a.href).pathname === location.pathname && new URL(a.href).hash === (location.hash || '#open')) a.setAttribute('aria-current', 'step');
+  });
+})();
+</script>
+</body>
+</html>
